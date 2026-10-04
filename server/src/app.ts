@@ -29,6 +29,7 @@ export async function buildApp(db: DB, config: Config, opts: { realtime?: boolea
   await app.register(cookie, { secret: config.sessionSecret });
   await app.register(rateLimit, { global: false });
 
+  const publicHost = new URL(config.publicUrl).host;
   const rt: Realtime = opts.realtime === false ? noopRealtime() : createRealtime(app, db);
   const ctx: Ctx = { db, config, rt };
 
@@ -47,7 +48,7 @@ export async function buildApp(db: DB, config: Config, opts: { realtime?: boolea
         } catch {
           // fall through to the rejection below
         }
-        if (host !== req.host) throw new HttpError(403, 'Cross-origin request blocked');
+        if (host !== req.host && host !== publicHost) throw new HttpError(403, 'Cross-origin request blocked');
       }
     }
     const token = readSessionToken(req);
