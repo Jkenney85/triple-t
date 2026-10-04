@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+data-dev
+import
+.env
+*.log
+.DS_Store
+web/dev-dist
+.env.dev

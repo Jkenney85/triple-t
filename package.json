@@ -1,0 +1,19 @@
+{
+  "name": "triple-t",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": ["shared", "server", "web"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w server",
+    "test": "vitest run",
+    "typecheck": "tsc -p shared --noEmit && tsc -p server --noEmit && tsc -p web --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.3",
+    "@types/node": "^24.0.0"
+  }
+}

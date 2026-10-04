@@ -1,0 +1,22 @@
+services:
+  triple-t:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/data
+      - ./import:/import
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.triple-t.rule=Host(`ttt.jamesdkenney.com`)"
+      - "traefik.http.routers.triple-t.entrypoints=websecure"
+      - "traefik.http.routers.triple-t.tls.certresolver=letsencrypt"
+      - "traefik.http.services.triple-t.loadbalancer.server.port=3000"
+      - "traefik.http.routers.triple-t.middlewares=security-headers@file"
+
+networks:
+  proxy:
+    external: true
