@@ -13,6 +13,7 @@ export default function GlobalSearch({ onDark }: { onDark?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -20,8 +21,10 @@ export default function GlobalSearch({ onDark }: { onDark?: boolean }) {
     const term = q.trim();
     if (term.length < 2) {
       setResults([]);
+      setLoading(false);
       return;
     }
+    setLoading(true);
     const t = setTimeout(async () => {
       try {
         const res = await get<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(term)}`);
@@ -29,6 +32,8 @@ export default function GlobalSearch({ onDark }: { onDark?: boolean }) {
         setActive(0);
       } catch {
         setResults([]);
+      } finally {
+        setLoading(false);
       }
     }, 200);
     return () => clearTimeout(t);
@@ -117,7 +122,7 @@ export default function GlobalSearch({ onDark }: { onDark?: boolean }) {
       {open && q.trim().length >= 2 && (
         <div className="animate-pop absolute right-0 top-11 z-50 max-h-[70vh] w-full overflow-y-auto rounded-lg bg-raised p-1 text-ink shadow-pop sm:top-10 sm:w-96">
           {results.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-ink-subtle">No cards match “{q.trim()}”.</p>
+            <p className="px-3 py-4 text-sm text-ink-subtle">{loading ? 'Searching…' : `No cards match “${q.trim()}”.`}</p>
           ) : (
             results.map((r, i) => (
               <button

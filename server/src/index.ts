@@ -28,6 +28,7 @@ app.log.info(`Triple T running at ${config.publicUrl} (TZ ${config.tz}, data in 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, async () => {
     app.log.info(`${signal} received, shutting down`);
+    setTimeout(() => process.exit(0), 5000).unref();
     await app.close();
     db.$client.close();
     process.exit(0);

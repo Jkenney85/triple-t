@@ -28,10 +28,13 @@ import VideosSection from './VideosSection';
 export default function CardModal({ cardId, onClose }: { cardId: number; onClose: () => void }) {
   const card = useBoard((s) => s.cards[cardId]);
   const status = useBoard((s) => s.status);
+  const seen = useRef(false);
+  if (card) seen.current = true;
 
   useEffect(() => {
     if (status === 'ready' && !card) {
-      toast('That card was archived or no longer exists.', 'info');
+      // Only explain when a link pointed at a missing card, not when it was just archived from here or elsewhere.
+      if (!seen.current) toast('That card was archived or no longer exists.', 'info');
       onClose();
     }
   }, [status, card, onClose]);

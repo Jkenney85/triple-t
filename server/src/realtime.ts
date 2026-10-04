@@ -22,6 +22,12 @@ export function noopRealtime(): Realtime {
 
 export function createRealtime(app: FastifyInstance, db: DB): Realtime {
   const io = new Server(app.server, { path: '/socket.io/', serveClient: false, cors: { origin: false } });
+  // Close websockets before Fastify waits for open connections, or shutdown hangs.
+  app.addHook('preClose', (done) => {
+    io.local.disconnectSockets(true);
+    io.close(() => done());
+  });
+
   /** boardId -> socketId -> viewer */
   const presence = new Map<number, Map<string, PresenceUser>>();
 
