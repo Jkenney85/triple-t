@@ -21,7 +21,8 @@ export async function api<T = unknown>(method: string, url: string, body?: unkno
   if (socketId) headers['x-socket-id'] = socketId;
   // Fastify rejects an empty JSON body, so mutations always send at least {}.
   const hasBody = method !== 'GET' && method !== 'HEAD';
-  if (hasBody) headers['content-type'] = 'application/json';
+  const isForm = body instanceof FormData;
+  if (hasBody && !isForm) headers['content-type'] = 'application/json';
 
   let res: Response;
   try {
@@ -29,7 +30,7 @@ export async function api<T = unknown>(method: string, url: string, body?: unkno
       method,
       headers,
       credentials: 'same-origin',
-      body: hasBody ? JSON.stringify(body ?? {}) : undefined,
+      body: !hasBody ? undefined : isForm ? body : JSON.stringify(body ?? {}),
     });
   } catch {
     throw new ApiError(0, "Can't reach the server. Check your connection.");
@@ -54,4 +55,11 @@ export const get = <T>(url: string) => api<T>('GET', url);
 export const post = <T>(url: string, body?: unknown) => api<T>('POST', url, body);
 export const patch = <T>(url: string, body?: unknown) => api<T>('PATCH', url, body);
 export const put = <T>(url: string, body?: unknown) => api<T>('PUT', url, body);
+/** Uploads one file as multipart form data under the field name "file". */
+export function upload<T>(url: string, file: File): Promise<T> {
+  const form = new FormData();
+  form.append('file', file);
+  return api<T>('POST', url, form);
+}
+
 export const del = <T>(url: string, body?: unknown) => api<T>('DELETE', url, body);

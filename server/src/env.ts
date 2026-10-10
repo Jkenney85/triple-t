@@ -6,6 +6,7 @@ export interface Config {
   dataDir: string;
   dbFile: string;
   thumbsDir: string;
+  backgroundsDir: string;
   publicUrl: string;
   sessionSecret: string;
   adminUsername?: string;
@@ -41,6 +42,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataDir,
     dbFile: path.join(dataDir, 'triple-t.db'),
     thumbsDir: path.join(dataDir, 'thumbnails'),
+    backgroundsDir: path.join(dataDir, 'backgrounds'),
     publicUrl,
     sessionSecret,
     adminUsername: env.ADMIN_USERNAME || undefined,

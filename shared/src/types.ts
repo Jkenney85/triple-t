@@ -15,6 +15,8 @@ export interface Board {
   id: number;
   name: string;
   color: string;
+  /** URL of the uploaded wallpaper (webp), or null. A "-thumb.webp" sibling exists for previews. */
+  backgroundImage: string | null;
   archivedAt: number | null;
   createdAt: number;
   updatedAt: number;

@@ -50,7 +50,7 @@ export default function Profile() {
   return (
     <div className="flex min-h-full flex-col">
       <AppHeader />
-      <main className="px-safe pb-safe mx-auto w-full max-w-lg flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-lg flex-1 pt-8 px-[max(1rem,env(safe-area-inset-left))] pb-[max(2rem,env(safe-area-inset-bottom))]">
         <h1 className="mb-6 text-xl font-bold">Your profile</h1>
         <form onSubmit={saveProfile} className="rounded-xl border border-line bg-raised p-5">
           <div className="mb-4 flex items-center gap-3">

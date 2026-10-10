@@ -13,7 +13,7 @@ import {
 } from '@triple-t/shared';
 import { useBoard } from '../stores/board';
 import { useSession } from '../stores/session';
-import { del, patch, post, put } from './api';
+import { del, patch, post, put, upload } from './api';
 
 const board = () => useBoard.getState();
 const me = () => useSession.getState().me!.id;
@@ -68,6 +68,12 @@ export const deleteCard = (card: Card) => board().mutate(null, () => del<Patch>(
 export function updateBoard(b: Board, changes: Partial<Pick<Board, 'name' | 'color'>>) {
   return board().mutate({ boardId: b.id, board: { ...b, ...changes } }, () => patch<Patch>(`/api/boards/${b.id}`, changes));
 }
+
+export const uploadBoardBackground = (b: Board, file: File) =>
+  board().mutate(null, () => upload<Patch>(`/api/boards/${b.id}/background`, file));
+
+export const removeBoardBackground = (b: Board) =>
+  board().mutate({ boardId: b.id, board: { ...b, backgroundImage: null } }, () => del<Patch>(`/api/boards/${b.id}/background`));
 
 export const archiveBoard = (b: Board) => board().mutate(null, () => post<Patch>(`/api/boards/${b.id}/archive`));
 export const restoreBoard = (b: Board) => board().mutate(null, () => post<Patch>(`/api/boards/${b.id}/restore`));

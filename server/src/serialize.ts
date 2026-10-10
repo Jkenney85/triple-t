@@ -12,6 +12,7 @@ export const toBoard = (b: BoardRow): Board => ({
   id: b.id,
   name: b.name,
   color: b.color,
+  backgroundImage: b.backgroundImage ? `/api/backgrounds/${b.backgroundImage}` : null,
   archivedAt: b.archivedAt,
   createdAt: b.createdAt,
   updatedAt: b.updatedAt,

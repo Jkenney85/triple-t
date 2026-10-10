@@ -37,6 +37,8 @@ export const boards = sqliteTable('boards', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   color: text('color').notNull(),
+  /** File name of the uploaded wallpaper in DATA_DIR/backgrounds (a "-thumb" sibling exists). */
+  backgroundImage: text('background_image'),
   archivedAt: integer('archived_at'),
   createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at').notNull().default(now),

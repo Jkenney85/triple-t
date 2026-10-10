@@ -3,7 +3,6 @@ import { ArrowDown, ArrowUp, CheckCircle2, Circle, Pencil, Plus, Trash2 } from '
 import {
   FIELD_TYPES,
   POSITION_GAP,
-  isHexColor,
   isNumericType,
   readableTextColor,
   type Board,
@@ -25,13 +24,12 @@ import {
   updateField,
 } from '../../lib/actions';
 import { useBoard } from '../../stores/board';
-import { useBoards } from '../../stores/boards';
-import { ThemePicker } from '../../pages/Home';
 import { Button, Drawer, IconButton, confirmDialog, cx, inputClass } from '../ui';
 import { LabelEditor } from './CardPopovers';
+import BackgroundPicker from './BackgroundPicker';
 import DeleteColumnDialog from './DeleteColumnDialog';
 
-type Tab = 'general' | 'lists' | 'labels' | 'fields';
+type Tab = 'general' | 'background' | 'lists' | 'labels' | 'fields';
 
 const TYPE_LABEL: Record<FieldType, string> = {
   number: 'Number',
@@ -46,19 +44,20 @@ export default function BoardSettings({ board, onClose }: { board: Board; onClos
   const [tab, setTab] = useState<Tab>('general');
   return (
     <Drawer title="Board settings" onClose={onClose}>
-      <div className="mb-4 grid grid-cols-4 gap-1 rounded-md bg-sunken p-1">
-        {(['general', 'lists', 'labels', 'fields'] as Tab[]).map((t) => (
+      <div className="mb-4 grid grid-cols-5 gap-1 rounded-md bg-sunken p-1">
+        {(['general', 'background', 'lists', 'labels', 'fields'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={cx('h-8 rounded text-xs font-semibold capitalize', tab === t ? 'bg-raised shadow-card' : 'text-ink-subtle hover:text-ink')}
+            className={cx('h-8 rounded text-[11px] font-semibold capitalize', tab === t ? 'bg-raised shadow-card' : 'text-ink-subtle hover:text-ink')}
           >
             {t}
           </button>
         ))}
       </div>
       {tab === 'general' && <General board={board} />}
+      {tab === 'background' && <BackgroundPicker board={board} />}
       {tab === 'lists' && <Lists board={board} />}
       {tab === 'labels' && <Labels board={board} />}
       {tab === 'fields' && <Fields board={board} />}
@@ -70,7 +69,6 @@ const sectionTitle = 'mb-1.5 text-xs font-semibold text-ink-subtle';
 
 function General({ board }: { board: Board }) {
   const [name, setName] = useState(board.name);
-  const [hex, setHex] = useState(isHexColor(board.color) ? board.color : '');
   useEffect(() => setName(board.name), [board.name]);
 
   return (
@@ -85,21 +83,6 @@ function General({ board }: { board: Board }) {
           onBlur={() => name.trim() && name.trim() !== board.name && void updateBoard(board, { name: name.trim() }).catch(() => {})}
           onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         />
-      </div>
-      <div>
-        <p className={sectionTitle}>Background</p>
-        <ThemePicker value={board.color} onChange={(color) => void updateBoard(board, { color }).then(() => useBoards.getState().load()).catch(() => {})} />
-        <div className="mt-2 flex items-center gap-2">
-          <input
-            type="color"
-            aria-label="Custom background color"
-            value={isHexColor(hex) ? hex : '#0c66e4'}
-            onChange={(e) => setHex(e.target.value)}
-            onBlur={() => isHexColor(hex) && hex !== board.color && void updateBoard(board, { color: hex }).catch(() => {})}
-            className="h-9 w-12 cursor-pointer rounded border border-line bg-transparent p-0.5"
-          />
-          <span className="text-xs text-ink-subtle">Custom color</span>
-        </div>
       </div>
       <div className="border-t border-line pt-4">
         {board.archivedAt ? (

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, Download, LogOut, Monitor, Moon, Sun, UserCog, Users } from 'lucide-react';
-import { boardTheme } from '@triple-t/shared';
+import { boardBackground } from '@triple-t/shared';
 import { useBoards } from '../stores/boards';
 import { useSession } from '../stores/session';
 import { useUi, type ThemePref } from '../stores/ui';
@@ -57,7 +57,7 @@ export default function AppHeader({ onDark = false }: { onDark?: boolean }) {
                     navigate(`/b/${b.id}`);
                   }}
                 >
-                  <span className="h-6 w-9 shrink-0 rounded" style={{ background: boardTheme(b.color).background }} />
+                  <span className="h-6 w-9 shrink-0 rounded" style={{ background: boardBackground(b, 'thumb') }} />
                   <span className="truncate font-medium">{b.name}</span>
                 </button>
               ))}

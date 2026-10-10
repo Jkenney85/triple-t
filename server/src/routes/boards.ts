@@ -1,12 +1,14 @@
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
-  BOARD_THEMES,
   FIELD_TYPES,
   POSITION_GAP,
   appendPosition,
   defaultTotalMode,
+  isBoardColor,
   isHexColor,
   isNumericType,
   sortCards,
@@ -18,11 +20,10 @@ import { commit, idParam, parseBody, type Ctx } from '../ctx';
 import type { DB } from '../db';
 import * as s from '../db/schema';
 import { badRequest, HttpError, notFound } from '../errors';
+import { BACKGROUND_FILE, MAX_UPLOAD_BYTES, UnsupportedImageError, removeBackground, saveBackground } from '../services/backgrounds';
 import { getBoard, getColumn, loadBoardState, loadCards, toBoard, toColumn, toField, toLabel } from '../serialize';
 
-const boardColor = z
-  .string()
-  .refine((c) => isHexColor(c) || BOARD_THEMES.some((t) => t.id === c), 'Unknown board color');
+const boardColor = z.string().refine((c) => isBoardColor(c), 'Unknown board color');
 const name = (what: string) => z.string().trim().min(1, `${what} is required`).max(80);
 const labelColor = z.string().refine((c) => isHexColor(c), 'Pick a label color');
 const fieldType = z.enum(FIELD_TYPES as [FieldType, ...FieldType[]]);
@@ -117,6 +118,63 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
       return commit(ctx, req, { boardId: id, board: toBoard(board) });
     });
   }
+
+  // ---- Wallpaper ----
+
+  app.post('/api/boards/:id/background', async (req) => {
+    const id = idParam(req);
+    const existing = getBoard(db, id);
+    if (!req.isMultipart()) throw badRequest('Upload the photo as multipart form data');
+    const part = await req.file({ limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 } });
+    if (!part) throw badRequest('Choose a photo to upload');
+    let buffer: Buffer;
+    try {
+      buffer = await part.toBuffer();
+    } catch {
+      throw new HttpError(413, `Photos must be under ${MAX_UPLOAD_BYTES / 1024 / 1024} MB`);
+    }
+    let file: string;
+    try {
+      file = await saveBackground(buffer, ctx.config.backgroundsDir, id);
+    } catch (err) {
+      if (err instanceof UnsupportedImageError) throw badRequest(err.message);
+      throw err;
+    }
+    const board = db
+      .update(s.boards)
+      .set({ backgroundImage: file, updatedAt: Date.now() })
+      .where(eq(s.boards.id, id))
+      .returning()
+      .get();
+    await removeBackground(ctx.config.backgroundsDir, existing.backgroundImage);
+    rt.emitBoardsChanged();
+    return commit(ctx, req, { boardId: id, board: toBoard(board) });
+  });
+
+  app.delete('/api/boards/:id/background', async (req) => {
+    const id = idParam(req);
+    const existing = getBoard(db, id);
+    const board = db
+      .update(s.boards)
+      .set({ backgroundImage: null, updatedAt: Date.now() })
+      .where(eq(s.boards.id, id))
+      .returning()
+      .get();
+    await removeBackground(ctx.config.backgroundsDir, existing.backgroundImage);
+    rt.emitBoardsChanged();
+    return commit(ctx, req, { boardId: id, board: toBoard(board) });
+  });
+
+  app.get('/api/backgrounds/:file', async (req, reply) => {
+    const { file } = req.params as { file: string };
+    if (!BACKGROUND_FILE.test(file)) throw notFound();
+    const full = path.join(ctx.config.backgroundsDir, file);
+    if (!fs.existsSync(full)) throw notFound();
+    reply.header('content-type', 'image/webp');
+    reply.header('cache-control', 'private, max-age=31536000, immutable');
+    reply.header('x-content-type-options', 'nosniff');
+    return reply.send(fs.createReadStream(full));
+  });
 
   /** Marks a column as the board's single Done column. Cards already in it lose their day. */
   app.put('/api/boards/:id/done-column', async (req) => {

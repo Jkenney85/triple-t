@@ -25,6 +25,7 @@ import {
   EMPTY_FILTER,
   POSITION_GAP,
   activeFilterCount,
+  boardBackground,
   boardTheme,
   cardMatchesFilter,
   computeDropPosition,
@@ -309,7 +310,7 @@ export default function BoardPage() {
   const filtersOn = activeFilterCount(filter) > 0;
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ background: theme.background }}>
+    <div className="fixed inset-0 flex flex-col" style={{ background: board ? boardBackground(board) : theme.background }}>
       <AppHeader onDark />
       {board ? (
         <>
@@ -320,7 +321,7 @@ export default function BoardPage() {
             onOpenPanel={setPanel}
           />
           {board.archivedAt && (
-            <div className="px-safe bg-[#f5cd47] px-4 py-2 text-center text-sm font-medium text-[#533f04]">
+            <div className="bg-[#f5cd47] px-4 py-2 text-center text-sm font-medium text-[#533f04]">
               This board is archived. Restore it from board settings to keep it in your boards list.
             </div>
           )}
@@ -336,12 +337,15 @@ export default function BoardPage() {
               setDragItems(null);
             }}
           >
+            {/* Outer element scrolls; the inner row is centered with auto margins, which
+                collapse to zero once the lists are wider than the screen (no clipping). */}
             <div
               className={cx(
-                'board-scroll px-safe pb-safe flex flex-1 items-start gap-3 overflow-x-auto overflow-y-hidden px-3 pb-3 pt-1',
+                'board-scroll flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden scroll-pl-[max(0.75rem,env(safe-area-inset-left))]',
                 !activeId && 'snap-x snap-mandatory sm:snap-none',
               )}
             >
+              <div className="mx-auto flex h-full w-max items-start gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1">
               <SortableContext items={sortedColumns.map((c) => colKey(c.id))} strategy={horizontalListSortingStrategy}>
                 {sortedColumns.map((col) => (
                   <ColumnView
@@ -355,8 +359,8 @@ export default function BoardPage() {
                   />
                 ))}
               </SortableContext>
-              <AddColumn boardId={board.id} />
-              <div className="w-1 shrink-0" />
+              <AddColumn boardId={board.id} photo={!!board.backgroundImage} />
+              </div>
             </div>
             <DragOverlay dropAnimation={null}>
               {activeCard ? (
@@ -406,7 +410,7 @@ export default function BoardPage() {
   );
 }
 
-function AddColumn({ boardId }: { boardId: number }) {
+function AddColumn({ boardId, photo }: { boardId: number; photo: boolean }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
 
@@ -426,7 +430,10 @@ function AddColumn({ boardId }: { boardId: number }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-12 w-[85vw] shrink-0 snap-start items-center gap-2 rounded-xl bg-white/25 px-3 text-sm font-medium text-white hover:bg-white/35 sm:w-[272px]"
+        className={cx(
+          'flex h-12 w-[85vw] shrink-0 snap-start items-center gap-2 rounded-xl px-3 text-sm font-medium text-white sm:w-[272px]',
+          photo ? 'bg-black/40 backdrop-blur-sm hover:bg-black/50' : 'bg-white/25 hover:bg-white/35',
+        )}
       >
         <Plus size={16} /> Add another list
       </button>

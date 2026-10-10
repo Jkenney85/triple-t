@@ -159,6 +159,11 @@ button {
   margin-right: 4px;
 }
 
+/*
+ * Safe-area helpers for elements with no padding of their own on that side.
+ * They're unlayered, so they override Tailwind padding utilities on the same
+ * element: combine with padding via e.g. pl-[max(0.75rem,env(safe-area-inset-left))].
+ */
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }

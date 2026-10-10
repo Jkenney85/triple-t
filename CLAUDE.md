@@ -39,6 +39,7 @@ server/src/  app.ts (Fastify setup, CSRF origin check, static/SPA serving)
              index.ts (startup, shutdown), env.ts, auth.ts (argon2, sessions, admin bootstrap)
              realtime.ts (Socket.IO rooms + presence), serialize.ts (row → wire, loadBoardState)
              routes/{auth,admin,boards,cards}.ts, services/tiktok.ts (oEmbed + thumbnail fetch, SSRF guards)
+             services/backgrounds.ts (wallpaper upload: sharp → webp max 2560px + 480x320 thumb)
              db/schema.ts + server/drizzle/ (migrations, applied automatically at startup)
 web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mutate with rollback)
              lib/actions.ts (every mutation), lib/api.ts, lib/socket.ts, lib/useDraft.ts
@@ -55,6 +56,7 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
   - Text fields use `useDraft` so incoming updates don't overwrite a field the user is typing in.
   - Reconnecting rejoins the room and reloads the full board.
 - **Totals** are calculated in `shared/totals.ts` and never stored. Metric values are stored per video as raw strings.
+- **Board backgrounds:** `boards.color` holds a preset id (`BOARD_THEMES` in `shared/color.ts`; ids are stored, so never rename or remove one), a `#rrggbb`, or `gradient:#from:#to:angle`. It's validated by `isBoardColor`; never accept arbitrary CSS. An optional `background_image` is layered over the color by `boardBackground()`. Uploads are always re-encoded with sharp (this also validates them and strips EXIF/GPS), and they're served only to signed-in users from `/api/backgrounds/:file`.
 - **TikTok fetches:** only hosts on the allowlist; redirects are followed manually and every hop is re-checked; private IPs are refused; there's a timeout and size caps; thumbnails are saved to `/data/thumbnails`.
 - **Security:** sessions use a signed httpOnly SameSite=Lax cookie (`Secure` when `PUBLIC_URL` is https). Mutations are rejected when the `Origin` header doesn't match the request host or `PUBLIC_URL`. Login is rate-limited. Keep the frontend free of inline scripts (the CSP from Traefik's `security-headers@file` middleware is unknown).
 
@@ -66,6 +68,8 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
 - The browser-preview tool sets `PORT`, so the server's dev script pins `PORT=3000` and Vite uses `--strictPort`.
 - The Vite proxy rewrites the Host header, which is why the CSRF check also accepts the `PUBLIC_URL` host.
 - The Docker entrypoint chowns `/data` and then drops to the `node` user with `setpriv`. Bind mounts are often owned by root.
+- `.pt-safe`, `.pb-safe` and `.px-safe` in `index.css` are unlayered, so they **override** Tailwind padding on the same element (this once zeroed the board's left padding). To combine padding with a safe area, use `pl-[max(0.75rem,env(safe-area-inset-left))]`.
+- The board canvas is an outer horizontal scroller with an inner `mx-auto w-max` row. This centers the lists when they fit, without clipping when they overflow (`justify-center` would clip the left side).
 - iOS: inputs use `text-base` on phones to stop the zoom-on-focus. Cards set `-webkit-touch-callout:none` so long-press starts a drag (TouchSensor, 250ms delay).
 
 ## Status

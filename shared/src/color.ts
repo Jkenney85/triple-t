@@ -36,31 +36,111 @@ export const LABEL_COLORS = [
 export interface BoardTheme {
   id: string;
   name: string;
+  kind: 'gradient' | 'solid';
   background: string;
   /** Representative solid color for the header and theme-color meta tag. */
   base: string;
 }
 
+const grad = (id: string, name: string, from: string, to: string, angle = 135): BoardTheme => ({
+  id,
+  name,
+  kind: 'gradient',
+  base: mixHex(from, to),
+  background: `linear-gradient(${angle}deg, ${from} 0%, ${to} 100%)`,
+});
+const solid = (id: string, name: string, color: string): BoardTheme => ({ id, name, kind: 'solid', base: color, background: color });
+
+/** Preset backgrounds. Ids are stored on boards, so never rename or remove one. */
 export const BOARD_THEMES: BoardTheme[] = [
-  { id: 'ocean', name: 'Ocean', base: '#0c66e4', background: 'linear-gradient(135deg, #0c66e4 0%, #09326c 100%)' },
-  { id: 'sunset', name: 'Sunset', base: '#c9372c', background: 'linear-gradient(135deg, #f87168 0%, #9f2a5c 100%)' },
-  { id: 'grape', name: 'Grape', base: '#6e5dc6', background: 'linear-gradient(135deg, #8f7ee7 0%, #352c63 100%)' },
-  { id: 'forest', name: 'Forest', base: '#1f845a', background: 'linear-gradient(135deg, #22a06b 0%, #164b35 100%)' },
-  { id: 'peach', name: 'Peach', base: '#e56910', background: 'linear-gradient(135deg, #fea362 0%, #c25100 100%)' },
-  { id: 'lagoon', name: 'Lagoon', base: '#227d9b', background: 'linear-gradient(135deg, #6cc3e0 0%, #1d4f73 100%)' },
-  { id: 'bubblegum', name: 'Bubblegum', base: '#ae4787', background: 'linear-gradient(135deg, #e774bb 0%, #6e5dc6 100%)' },
-  { id: 'slate', name: 'Slate', base: '#44546f', background: 'linear-gradient(135deg, #626f86 0%, #172b4d 100%)' },
-  { id: 'blue', name: 'Blue', base: '#0079bf', background: '#0079bf' },
-  { id: 'green', name: 'Green', base: '#519839', background: '#519839' },
-  { id: 'orange', name: 'Orange', base: '#d29034', background: '#d29034' },
-  { id: 'purple', name: 'Purple', base: '#89609e', background: '#89609e' },
+  grad('ocean', 'Ocean', '#0c66e4', '#09326c'),
+  grad('sunset', 'Sunset', '#f87168', '#9f2a5c'),
+  grad('grape', 'Grape', '#8f7ee7', '#352c63'),
+  grad('forest', 'Forest', '#22a06b', '#164b35'),
+  grad('peach', 'Peach', '#fea362', '#c25100'),
+  grad('lagoon', 'Lagoon', '#6cc3e0', '#1d4f73'),
+  grad('bubblegum', 'Bubblegum', '#e774bb', '#6e5dc6'),
+  grad('slate', 'Slate', '#626f86', '#172b4d'),
+  grad('aurora', 'Aurora', '#5b4bdb', '#1fb5c4'),
+  grad('dusk', 'Dusk', '#2b5876', '#4e4376'),
+  grad('ember', 'Ember', '#f12711', '#f5af19'),
+  grad('deepsea', 'Deep sea', '#0f2027', '#2c5364'),
+  grad('berry', 'Berry', '#8e2de2', '#4a00e0'),
+  grad('rose', 'Rose', '#e55d87', '#5fc3e4'),
+  grad('cosmic', 'Cosmic', '#ff00cc', '#333399'),
+  grad('coral', 'Coral', '#ff5f6d', '#ffc371'),
+  grad('sky', 'Sky', '#2980b9', '#6dd5fa'),
+  grad('emerald', 'Emerald', '#0f9b8e', '#1d4f3f'),
+  grad('candy', 'Candy', '#fc5c7d', '#6a82fb'),
+  grad('midnight', 'Midnight', '#232526', '#414345'),
+  grad('mojito', 'Mojito', '#1d976c', '#93f9b9'),
+  grad('flare', 'Flare', '#f12711', '#c2185b', 160),
+  grad('lilac', 'Lilac', '#b06ab3', '#4568dc'),
+  grad('sand', 'Sand', '#c79081', '#7b4397'),
+  solid('blue', 'Blue', '#0079bf'),
+  solid('green', 'Green', '#519839'),
+  solid('orange', 'Orange', '#d29034'),
+  solid('purple', 'Purple', '#89609e'),
+  solid('red', 'Red', '#b04632'),
+  solid('pink', 'Pink', '#cd5a91'),
+  solid('lime', 'Lime', '#4bbf6b'),
+  solid('teal', 'Teal', '#00aecc'),
+  solid('gray', 'Gray', '#838c91'),
+  solid('navy', 'Navy', '#172b4d'),
 ];
+
+export interface CustomGradient {
+  from: string;
+  to: string;
+  angle: number;
+}
+
+const GRADIENT_VALUE = /^gradient:(#[0-9a-fA-F]{6}):(#[0-9a-fA-F]{6}):(\d{1,3})$/;
+
+/** Custom gradients are stored on the board as "gradient:#from:#to:angle". */
+export function gradientValue(g: CustomGradient): string {
+  return `gradient:${g.from.toLowerCase()}:${g.to.toLowerCase()}:${Math.round(g.angle) % 360}`;
+}
+
+export function parseGradientValue(value: string): CustomGradient | null {
+  const m = GRADIENT_VALUE.exec(value);
+  if (!m || Number(m[3]) >= 360) return null;
+  return { from: m[1].toLowerCase(), to: m[2].toLowerCase(), angle: Number(m[3]) };
+}
+
+/** A board's color: a preset id, a "#rrggbb" solid, or a custom gradient value. */
+export function isBoardColor(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    (BOARD_THEMES.some((t) => t.id === value) || isHexColor(value) || parseGradientValue(value) !== null)
+  );
+}
+
+export function mixHex(a: string, b: string): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (shift: number) => Math.round((((pa >> shift) & 255) + ((pb >> shift) & 255)) / 2);
+  return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, '0')).join('')}`;
+}
 
 export function boardTheme(color: string): BoardTheme {
   const theme = BOARD_THEMES.find((t) => t.id === color);
   if (theme) return theme;
-  if (isHexColor(color)) return { id: color, name: 'Custom', base: color, background: color };
+  if (isHexColor(color)) return solid(color, 'Custom', color);
+  const g = parseGradientValue(color);
+  if (g) return grad(color, 'Custom', g.from, g.to, g.angle);
   return BOARD_THEMES[0];
+}
+
+/**
+ * CSS `background` for a board. A photo is layered over the color theme,
+ * which shows while the image loads (and if it ever fails).
+ */
+export function boardBackground(board: { color: string; backgroundImage: string | null }, size: 'full' | 'thumb' = 'full'): string {
+  const theme = boardTheme(board.color);
+  if (!board.backgroundImage) return theme.background;
+  const url = size === 'thumb' ? board.backgroundImage.replace(/\.webp$/, '-thumb.webp') : board.backgroundImage;
+  return `url("${url}") center / cover no-repeat, ${theme.background}`;
 }
 
 export const AVATAR_COLORS = ['#0c66e4', '#1f845a', '#c25100', '#ae2e24', '#5e4db2', '#206a83', '#943d73', '#4c6b1f', '#626f86', '#7f5f01'];

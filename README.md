@@ -92,6 +92,12 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
   - The server resolves short links, fetches the title, author, and thumbnail through TikTok's oEmbed, and saves the thumbnail under `/data/thumbnails`. TikTok's own image links expire.
   - If the fetch fails, you get a placeholder and the link still works. Use the refresh button to try again.
   - Only TikTok domains are ever fetched.
+- **Board backgrounds.** Go to **Settings → Background**:
+  - pick one of 24 gradients or 10 solid colors;
+  - build your own two-color gradient (with a direction) or solid color;
+  - or upload a photo as wallpaper (JPEG, PNG, or WebP, up to 25 MB).
+
+  Photos are resized to at most 2560px and re-saved as WebP, which also strips location data from phone photos. They're stored under `/data/backgrounds`. The color you pick still shows while a photo loads.
 - **Archive** a card from its detail view. **Archived** (in the board bar) lists archived cards, where you can restore them or delete them permanently.
 - **Search.** **Filter** in the board bar searches titles, notes, banner text, and comments, and filters by label, day, banner color, due status, and whether a card has videos. The search box in the top bar searches every board and jumps to the card.
 - **Admin export.** Avatar menu, then **Download JSON export**, gives a full dump of everything except passwords.
@@ -104,6 +110,7 @@ Everything lives in `./data` on the host (`/data` in the container):
 data/
   triple-t.db          SQLite database (WAL mode; -wal and -shm files sit beside it)
   thumbnails/          locally stored TikTok thumbnails
+  backgrounds/         board wallpaper photos (+ small -thumb previews)
 ```
 
 There's no automatic backup yet. To take one while the app is running, use SQLite's online backup, which is safe with WAL:
@@ -126,7 +133,7 @@ cp -a data "data-backup-$(date +%F)"
 docker compose start
 ```
 
-**To restore:** stop the container and replace `data/triple-t.db` with your backup. Delete any `triple-t.db-wal` and `triple-t.db-shm` files beside it, copy `thumbnails/` back if you have it, then start the container.
+**To restore:** stop the container and replace `data/triple-t.db` with your backup. Delete any `triple-t.db-wal` and `triple-t.db-shm` files beside it, copy `thumbnails/` and `backgrounds/` back if you have them, then start the container.
 
 The `./import` mount in the compose file is unused. It's left in so the file stays exactly as you have it.
 

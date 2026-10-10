@@ -46,7 +46,12 @@ export default function BoardBar({
   const btn = 'flex h-9 items-center gap-1.5 rounded px-2.5 text-sm font-medium text-white hover:bg-white/20';
 
   return (
-    <div className="px-safe flex min-h-12 shrink-0 items-center gap-1 bg-black/15 px-2 py-1.5 text-white sm:px-3">
+    <div
+      className={cx(
+        'flex min-h-12 shrink-0 items-center gap-1 py-1.5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-white sm:pl-[max(0.75rem,env(safe-area-inset-left))] sm:pr-[max(0.75rem,env(safe-area-inset-right))]',
+        board.backgroundImage ? 'bg-black/35 backdrop-blur-sm' : 'bg-black/15',
+      )}
+    >
       {editing ? (
         <input
           autoFocus

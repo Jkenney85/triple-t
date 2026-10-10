@@ -24,7 +24,7 @@ export default function Login() {
   }
 
   return (
-    <div className="pt-safe flex min-h-full flex-col items-center justify-center bg-[linear-gradient(135deg,#5b4bdb_0%,#1fb5c4_100%)] px-4 py-10">
+    <div className="flex min-h-full flex-col items-center justify-center bg-[linear-gradient(135deg,#5b4bdb_0%,#1fb5c4_100%)] px-4 pb-10 pt-[max(2.5rem,env(safe-area-inset-top))]">
       <form onSubmit={submit} className="w-full max-w-sm rounded-xl bg-raised p-8 shadow-pop">
         <div className="mb-6 flex flex-col items-center gap-3">
           <LogoMark size={48} />

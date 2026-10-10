@@ -35,7 +35,7 @@ export default function AdminUsers() {
   return (
     <div className="flex min-h-full flex-col">
       <AppHeader />
-      <main className="px-safe pb-safe mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 pt-8 px-[max(1rem,env(safe-area-inset-left))] pb-[max(2rem,env(safe-area-inset-bottom))]">
         <div className="mb-5 flex items-center gap-3">
           <h1 className="flex-1 text-xl font-bold">Users</h1>
           <Button tone="primary" onClick={() => setCreating(true)}>

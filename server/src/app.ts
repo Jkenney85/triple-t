@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import { sql } from 'drizzle-orm';
@@ -28,6 +29,7 @@ export async function buildApp(db: DB, config: Config, opts: { realtime?: boolea
 
   await app.register(cookie, { secret: config.sessionSecret });
   await app.register(rateLimit, { global: false });
+  await app.register(multipart);
 
   const publicHost = new URL(config.publicUrl).host;
   const rt: Realtime = opts.realtime === false ? noopRealtime() : createRealtime(app, db);

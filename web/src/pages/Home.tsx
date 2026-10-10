@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Archive, Check, LayoutGrid, RotateCcw } from 'lucide-react';
-import { BOARD_THEMES, boardTheme, type Board } from '@triple-t/shared';
+import { BOARD_THEMES, boardBackground, boardTheme, type Board } from '@triple-t/shared';
 import AppHeader from '../components/AppHeader';
 import { Button, Popover, cx, inputClass, usePopover } from '../components/ui';
 import { ApiError, post } from '../lib/api';
@@ -26,7 +26,7 @@ export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
       <AppHeader />
-      <main className="px-safe pb-safe mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 pt-8 px-[max(1rem,env(safe-area-inset-left))] pb-[max(2rem,env(safe-area-inset-bottom))]">
         <h1 className="mb-4 flex items-center gap-2 text-base font-bold">
           <LayoutGrid size={18} /> Your boards
         </h1>
@@ -55,7 +55,7 @@ export default function Home() {
               <ul className="mt-3 divide-y divide-line rounded-lg border border-line bg-raised">
                 {archived.map((b) => (
                   <li key={b.id} className="flex items-center gap-3 px-3 py-2">
-                    <span className="h-8 w-12 shrink-0 rounded" style={{ background: boardTheme(b.color).background }} />
+                    <span className="h-8 w-12 shrink-0 rounded" style={{ background: boardBackground(b, 'thumb') }} />
                     <Link to={`/b/${b.id}`} className="flex-1 truncate font-medium hover:underline">
                       {b.name}
                     </Link>
@@ -88,7 +88,7 @@ function BoardTile({ board }: { board: Board }) {
     <Link
       to={`/b/${board.id}`}
       className="group relative flex h-24 overflow-hidden rounded-lg p-2.5 text-white shadow-card"
-      style={{ background: boardTheme(board.color).background }}
+      style={{ background: boardBackground(board, 'thumb') }}
     >
       <span className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/15" />
       <span className="relative line-clamp-2 text-base font-bold drop-shadow-sm">{board.name}</span>
@@ -98,19 +98,30 @@ function BoardTile({ board }: { board: Board }) {
 
 export function ThemePicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   return (
-    <div className="grid grid-cols-6 gap-1.5">
-      {BOARD_THEMES.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          title={t.name}
-          aria-label={t.name}
-          onClick={() => onChange(t.id)}
-          className={cx('relative flex h-9 items-center justify-center rounded text-white', value === t.id && 'ring-2 ring-accent ring-offset-1 ring-offset-raised')}
-          style={{ background: t.background }}
-        >
-          {value === t.id && <Check size={16} />}
-        </button>
+    <div className="flex flex-col gap-3">
+      {(['gradient', 'solid'] as const).map((kind) => (
+        <div key={kind}>
+          <p className="mb-1.5 text-xs font-semibold text-ink-subtle">{kind === 'gradient' ? 'Gradients' : 'Colors'}</p>
+          <div className="grid grid-cols-6 gap-1.5">
+            {BOARD_THEMES.filter((t) => t.kind === kind).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                title={t.name}
+                aria-label={t.name}
+                aria-pressed={value === t.id}
+                onClick={() => onChange(t.id)}
+                className={cx(
+                  'relative flex h-9 items-center justify-center rounded text-white',
+                  value === t.id && 'ring-2 ring-accent ring-offset-1 ring-offset-raised',
+                )}
+                style={{ background: t.background }}
+              >
+                {value === t.id && <Check size={16} className="drop-shadow" />}
+              </button>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -147,8 +158,8 @@ function CreateBoardPopover({ anchor, onClose }: { anchor: HTMLElement | null; o
             ))}
           </div>
         </div>
-        <p className="mb-1.5 text-xs font-semibold text-ink-subtle">Background</p>
         <ThemePicker value={color} onChange={setColor} />
+        <p className="mt-2 text-xs text-ink-subtle">You can add a photo or a custom gradient later in board settings.</p>
         <label className="mb-1 mt-3 block text-xs font-semibold text-ink-subtle" htmlFor="board-name">
           Board title
         </label>
