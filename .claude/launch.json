@@ -4,8 +4,20 @@
     {
       "name": "triple-t",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "triple-t-prod",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "set -a; . ./.env.dev; set +a; PORT=3400 PUBLIC_URL=http://localhost:3400 WEB_DIST=web/dist DATA_DIR=server/data-dev node server/dist/index.js"
+      ],
+      "port": 3400
     }
   ]
 }

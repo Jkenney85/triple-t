@@ -111,6 +111,16 @@ describe('moving into the Done column clears the day (server-enforced)', () => {
   });
 });
 
+describe('list colors', () => {
+  it('sets, normalizes and clears a list color, and rejects anything else', async () => {
+    const id = todo().id;
+    expect((await call('PATCH', `/api/columns/${id}`, { color: '#579DFF' })).body.columns![0].color).toBe('#579dff');
+    expect((await call('PATCH', `/api/columns/${id}`, { color: 'red' })).status).toBe(400);
+    expect((await call('PATCH', `/api/columns/${id}`, { color: 'url(x)' })).status).toBe(400);
+    expect((await call('PATCH', `/api/columns/${id}`, { color: null })).body.columns![0].color).toBeNull();
+  });
+});
+
 describe('security', () => {
   it('requires a session', async () => {
     const res = await app.inject({ method: 'GET', url: `/api/boards/${board.board.id}` });

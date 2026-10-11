@@ -15,6 +15,13 @@
       "when": 1791602906777,
       "tag": "0001_board_background",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791731635221,
+      "tag": "0002_column_color",
+      "breakpoints": true
     }
   ]
 }

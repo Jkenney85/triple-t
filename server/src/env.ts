@@ -16,6 +16,8 @@ export interface Config {
   /** Built frontend to serve, if present. */
   webDist?: string;
   secureCookies: boolean;
+  /** Id of the built frontend (from web/dist/version.json), announced to clients so stale tabs can update. */
+  buildId?: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {

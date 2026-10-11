@@ -224,7 +224,16 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
     const id = idParam(req);
     const existing = getColumn(db, id);
     const body = parseBody(
-      z.object({ name: name('List name').optional(), position: z.number().finite().optional() }),
+      z.object({
+        name: name('List name').optional(),
+        position: z.number().finite().optional(),
+        color: z
+          .string()
+          .refine((c) => isHexColor(c), 'Pick a list color')
+          .transform((c) => c.toLowerCase())
+          .nullable()
+          .optional(),
+      }),
       req.body,
     );
     const column = db.update(s.columns).set(body).where(eq(s.columns.id, id)).returning().get();

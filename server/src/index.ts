@@ -13,6 +13,14 @@ if (!config.webDist) {
   if (fs.existsSync(guess)) config.webDist = guess;
 }
 
+if (config.webDist) {
+  try {
+    config.buildId = JSON.parse(fs.readFileSync(path.join(config.webDist, 'version.json'), 'utf8')).build;
+  } catch {
+    // older build without version.json; clients just won't get update notices
+  }
+}
+
 const db = openDb(config.dbFile);
 const { app } = await buildApp(db, config, {
   logger: true,

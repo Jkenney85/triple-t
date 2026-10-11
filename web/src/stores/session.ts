@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { PublicUser } from '@triple-t/shared';
 import { ApiError, get, post } from '../lib/api';
 import { closeSocket, getSocket } from '../lib/socket';
+import { initUpdates } from '../lib/updates';
 
 interface SessionState {
   status: 'loading' | 'signedOut' | 'signedIn';
@@ -28,6 +29,7 @@ export const useSession = create<SessionState>((set, getState) => ({
       set({ me: user, tz: config.tz, status: 'signedIn' });
       await getState().loadUsers();
       const socket = getSocket();
+      initUpdates();
       socket.off('users:changed').on('users:changed', () => void getState().loadUsers());
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) set({ status: 'signedOut', me: null });

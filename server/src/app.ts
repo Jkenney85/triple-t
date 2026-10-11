@@ -32,7 +32,7 @@ export async function buildApp(db: DB, config: Config, opts: { realtime?: boolea
   await app.register(multipart);
 
   const publicHost = new URL(config.publicUrl).host;
-  const rt: Realtime = opts.realtime === false ? noopRealtime() : createRealtime(app, db);
+  const rt: Realtime = opts.realtime === false ? noopRealtime() : createRealtime(app, db, config.buildId);
   const ctx: Ctx = { db, config, rt };
 
   app.decorateRequest('user', null);
@@ -72,7 +72,7 @@ export async function buildApp(db: DB, config: Config, opts: { realtime?: boolea
 
   app.get('/healthz', async () => {
     db.get(sql`select 1`);
-    return { status: 'ok' };
+    return { status: 'ok', build: config.buildId ?? null };
   });
 
   await app.register(async (api) => authRoutes(api, ctx));

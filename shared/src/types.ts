@@ -28,6 +28,8 @@ export interface Column {
   name: string;
   position: number;
   isDone: boolean;
+  /** Optional "#rrggbb" tint for the list, or null. */
+  color: string | null;
 }
 
 export interface Label {

@@ -27,7 +27,7 @@ docker build -t triple-t:test .
 
 - Dev config lives in `.env.dev` at the root. It's gitignored, so on a new machine you have to create it (see README → Development). It holds `PUBLIC_URL=http://localhost:5173`, `DATA_DIR=./data-dev`, `SESSION_SECRET`, `ADMIN_USERNAME`/`ADMIN_PASSWORD`, and optional `TEST_USER2`/`TEST_USER2_PASSWORD` for a second test user.
 - The dev database lives at `server/data-dev/` (gitignored). Delete it to start fresh; the admin is recreated from `.env.dev`.
-- The browser preview launch config is `.claude/launch.json` (name `triple-t`, port 5173).
+- The browser preview launch config is `.claude/launch.json`: `triple-t` is dev on :5173; `triple-t-prod` runs the built app on :3400 (run `npm run build` first). Use the prod one to test the service worker and update flow, which are off in dev.
 
 ## Layout
 
@@ -57,6 +57,12 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
   - Reconnecting rejoins the room and reloads the full board.
 - **Totals** are calculated in `shared/totals.ts` and never stored. Metric values are stored per video as raw strings.
 - **Board backgrounds:** `boards.color` holds a preset id (`BOARD_THEMES` in `shared/color.ts`; ids are stored, so never rename or remove one), a `#rrggbb`, or `gradient:#from:#to:angle`. It's validated by `isBoardColor`; never accept arbitrary CSS. An optional `background_image` is layered over the color by `boardBackground()`. Uploads are always re-encoded with sharp (this also validates them and strips EXIF/GPS), and they're served only to signed-in users from `/api/backgrounds/:file`.
+- **List colors:** `columns.color` holds `#rrggbb` or null. The list background is `color-mix(in srgb, <color> var(--list-tint), var(--list))`, which gives a pastel in light mode and a deep shade in dark mode (`--list-tint` is set per theme in `index.css`).
+- **App updates (`web/src/lib/updates.ts`):**
+  - The service worker uses `registerType: 'prompt'`, so a new version waits until we hand over.
+  - Each build gets an id (`__BUILD_ID__` plus `dist/version.json`). The server reads it at startup, emits it as `version` on every socket connection, and includes it in `/healthz`.
+  - When the id differs, or the worker finds an update (checked every 30 minutes and whenever the app comes back to the foreground), an "A new version… Reload" bar appears. If the tab is hidden and no input is focused, the update applies by itself.
+  - `applyUpdate()` posts `SKIP_WAITING` to the waiting worker, waits for `controllerchange`, then reloads. A plain reload would just get the old cached app again. vite-plugin-pwa's own `updateSW(true)` doesn't reload in this case, so don't rely on it.
 - **TikTok fetches:** only hosts on the allowlist; redirects are followed manually and every hop is re-checked; private IPs are refused; there's a timeout and size caps; thumbnails are saved to `/data/thumbnails`.
 - **Security:** sessions use a signed httpOnly SameSite=Lax cookie (`Secure` when `PUBLIC_URL` is https). Mutations are rejected when the `Origin` header doesn't match the request host or `PUBLIC_URL`. Login is rate-limited. Keep the frontend free of inline scripts (the CSP from Traefik's `security-headers@file` middleware is unknown).
 

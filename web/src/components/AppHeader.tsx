@@ -5,6 +5,7 @@ import { boardBackground } from '@triple-t/shared';
 import { useBoards } from '../stores/boards';
 import { useSession } from '../stores/session';
 import { useUi, type ThemePref } from '../stores/ui';
+import { BUILD_ID } from '../lib/updates';
 import GlobalSearch from './GlobalSearch';
 import { Avatar, Popover, Wordmark, cx, usePopover } from './ui';
 
@@ -100,6 +101,7 @@ export default function AppHeader({ onDark = false }: { onDark?: boolean }) {
           >
             <LogOut size={16} /> Log out
           </button>
+          <p className="mt-2 px-2 text-[11px] text-ink-subtle">Version {BUILD_ID === 'dev' ? 'dev' : `${BUILD_ID.slice(0, 8)}-${BUILD_ID.slice(8)}`}</p>
         </Popover>
       )}
     </header>

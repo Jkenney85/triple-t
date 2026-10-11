@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { ConfirmHost, ConnectionBanner, LogoMark, Toasts } from './components/ui';
+import { ConfirmHost, ConnectionBanner, LogoMark, Toasts, UpdateBanner } from './components/ui';
 import { setUnauthorizedHandler } from './lib/api';
 import AdminUsers from './pages/AdminUsers';
 import BoardPage from './pages/BoardPage';
@@ -42,6 +42,7 @@ export default function App() {
         </Routes>
       )}
       {status === 'signedIn' && <ConnectionBanner />}
+      {status === 'signedIn' && <UpdateBanner />}
       <ConfirmHost />
       <Toasts />
     </>

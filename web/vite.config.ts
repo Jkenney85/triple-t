@@ -1,18 +1,34 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const backend = 'http://localhost:3000';
 
-export default defineConfig({
+/** Unique id for each production build; the server reports it so open tabs can tell they're out of date. */
+const buildId = process.env.BUILD_ID || new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+
+/** Writes dist/version.json, which the server reads at startup. */
+function versionFile(): Plugin {
+  return {
+    name: 'ttt-version-file',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build: buildId }) });
+    },
+  };
+}
+
+export default defineConfig(({ command }) => ({
+  define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId : 'dev') },
   plugins: [
     react(),
+    versionFile(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
-      // A separate registerSW.js file (not an inline script) keeps strict CSPs happy.
-      injectRegister: 'script-defer',
+      // The app registers the worker itself (lib/updates.ts) so it can offer a reload when a new version is ready.
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'theme-init.js'],
       manifest: {
         name: 'Triple T — TikTok Tracker',
@@ -49,4 +65,4 @@ export default defineConfig({
     },
   },
   build: { chunkSizeWarningLimit: 1500 },
-});
+}));

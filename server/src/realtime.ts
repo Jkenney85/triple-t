@@ -20,7 +20,7 @@ export function noopRealtime(): Realtime {
   return { io: null, emitPatch() {}, emitBoardsChanged() {}, emitUsersChanged() {}, disconnectUser() {} };
 }
 
-export function createRealtime(app: FastifyInstance, db: DB): Realtime {
+export function createRealtime(app: FastifyInstance, db: DB, buildId?: string): Realtime {
   const io = new Server(app.server, { path: '/socket.io/', serveClient: false, cors: { origin: false } });
   // Close websockets before Fastify waits for open connections, or shutdown hangs.
   app.addHook('preClose', (done) => {
@@ -63,6 +63,8 @@ export function createRealtime(app: FastifyInstance, db: DB): Realtime {
 
   io.on('connection', (socket) => {
     socket.join(`user:${socket.data.user.id}`);
+    // Lets clients running an older cached build know a new one is deployed.
+    if (buildId) socket.emit('version', buildId);
 
     socket.on('board:join', (boardId: unknown) => {
       if (!Number.isInteger(boardId)) return;

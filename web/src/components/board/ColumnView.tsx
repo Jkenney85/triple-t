@@ -6,6 +6,7 @@ import type { Column } from '@triple-t/shared';
 import { createCard, setDoneColumn, updateColumn } from '../../lib/actions';
 import { Button, IconButton, Popover, cx, usePopover } from '../ui';
 import { CardFront, type CardFrontData } from './CardFront';
+import ColumnColorPicker, { columnBackground } from './ColumnColorPicker';
 
 export const colKey = (id: number) => `col-${id}`;
 export const cardKey = (id: number) => `card-${id}`;
@@ -38,7 +39,7 @@ export function ColumnView({
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
+      style={{ transform: CSS.Translate.toString(transform), transition, background: columnBackground(column.color) }}
       className={cx(
         'flex max-h-full w-[85vw] shrink-0 snap-start flex-col self-start rounded-xl bg-list text-ink shadow-card sm:w-[272px]',
         isDragging && 'opacity-40',
@@ -94,6 +95,11 @@ function ColumnHeader({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(column.name);
   const menu = usePopover();
+  const [menuView, setMenuView] = useState<'actions' | 'color'>('actions');
+
+  useEffect(() => {
+    if (!menu.open) setMenuView('actions');
+  }, [menu.open]);
 
   useEffect(() => {
     if (!editing) setName(column.name);
@@ -139,7 +145,11 @@ function ColumnHeader({
         <MoreHorizontal size={16} />
       </IconButton>
       {menu.open && (
-        <Popover anchor={menu.anchor} onClose={menu.close} title="List actions">
+        <Popover anchor={menu.anchor} onClose={menu.close} title={menuView === 'color' ? 'List color' : 'List actions'}>
+          {menuView === 'color' ? (
+            <ColumnColorPicker column={column} />
+          ) : (
+          <>
           <MenuItem
             onClick={() => {
               menu.close();
@@ -155,6 +165,14 @@ function ColumnHeader({
             }}
           >
             Rename list
+          </MenuItem>
+          <MenuItem onClick={() => setMenuView('color')}>
+            <span className="flex-1">List color</span>
+            <span
+              className="h-4 w-6 rounded-sm border border-line"
+              style={{ background: column.color ?? 'transparent' }}
+              aria-label={column.color ? `Current color ${column.color}` : 'No color'}
+            />
           </MenuItem>
           {!column.isDone && (
             <MenuItem
@@ -177,6 +195,8 @@ function ColumnHeader({
             Delete list…
           </MenuItem>
           {column.isDone && <p className="px-2 pb-1 text-xs text-ink-subtle">Make another list the Done list before deleting this one.</p>}
+          </>
+          )}
         </Popover>
       )}
     </div>

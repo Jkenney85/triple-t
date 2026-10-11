@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { create } from 'zustand';
 import { initials, type PublicUser } from '@triple-t/shared';
 import { useConnection } from '../lib/socket';
+import { applyUpdate, useUpdate } from '../lib/updates';
 import { useUi } from '../stores/ui';
 
 export function cx(...parts: (string | false | null | undefined)[]) {
@@ -379,5 +380,26 @@ export function Drawer({ title, onClose, children }: { title: string; onClose: (
       </aside>
     </>,
     document.body,
+  );
+}
+
+/** Shown when a newer version of the app has been deployed. */
+export function UpdateBanner() {
+  const { available, applying } = useUpdate();
+  if (!available) return null;
+  return (
+    <div role="status" className="pb-safe pointer-events-none fixed inset-x-0 bottom-4 z-[58] flex justify-center px-4 sm:justify-start">
+      <div className="animate-pop pointer-events-auto flex items-center gap-3 rounded-lg bg-[#172b4d] py-2 pl-4 pr-2 text-sm text-white shadow-pop dark:bg-[#38414a]">
+        <span>A new version of Triple T is ready.</span>
+        <button
+          type="button"
+          disabled={applying}
+          onClick={() => void applyUpdate()}
+          className="h-8 rounded bg-[#579dff] px-3 font-semibold text-[#1d2125] hover:brightness-110 disabled:opacity-70"
+        >
+          {applying ? 'Updating…' : 'Reload'}
+        </button>
+      </div>
+    </div>
   );
 }

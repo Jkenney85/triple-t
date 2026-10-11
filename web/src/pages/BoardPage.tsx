@@ -41,6 +41,7 @@ import BoardBar from '../components/board/BoardBar';
 import BoardSettings from '../components/board/BoardSettings';
 import { CardFront, type CardFrontData } from '../components/board/CardFront';
 import CardModal from '../components/board/CardModal';
+import { columnBackground } from '../components/board/ColumnColorPicker';
 import { ColumnView, cardKey, colKey } from '../components/board/ColumnView';
 import DeleteColumnDialog from '../components/board/DeleteColumnDialog';
 import { Button, LogoMark, cx } from '../components/ui';
@@ -368,7 +369,10 @@ export default function BoardPage() {
                   <CardFront data={activeCard} dragging />
                 </div>
               ) : activeColumn ? (
-                <div className="w-[85vw] rotate-2 rounded-xl bg-list p-3 font-semibold text-ink opacity-90 shadow-pop sm:w-[272px]">
+                <div
+                  className="w-[85vw] rotate-2 rounded-xl bg-list p-3 font-semibold text-ink opacity-90 shadow-pop sm:w-[272px]"
+                  style={{ background: columnBackground(activeColumn.color) }}
+                >
                   {activeColumn.name}
                   <div className="mt-1 text-xs font-normal text-ink-subtle">{totalByColumn[activeColumn.id] ?? 0} cards</div>
                 </div>

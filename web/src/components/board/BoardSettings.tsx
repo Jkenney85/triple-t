@@ -24,7 +24,8 @@ import {
   updateField,
 } from '../../lib/actions';
 import { useBoard } from '../../stores/board';
-import { Button, Drawer, IconButton, confirmDialog, cx, inputClass } from '../ui';
+import { Button, Drawer, IconButton, Popover, confirmDialog, cx, inputClass, usePopover } from '../ui';
+import ColumnColorPicker from './ColumnColorPicker';
 import { LabelEditor } from './CardPopovers';
 import BackgroundPicker from './BackgroundPicker';
 import DeleteColumnDialog from './DeleteColumnDialog';
@@ -143,6 +144,7 @@ function Lists({ board }: { board: Board }) {
               {col.isDone ? <CheckCircle2 size={18} /> : <Circle size={18} />}
             </button>
             <ColumnName column={col} />
+            <ColumnColorButton column={col} />
             <IconButton label="Move up" disabled={i === 0} onClick={() => move(i, -1)} className="disabled:opacity-30">
               <ArrowUp size={15} />
             </IconButton>
@@ -176,6 +178,31 @@ function Lists({ board }: { board: Board }) {
         />
       )}
     </div>
+  );
+}
+
+function ColumnColorButton({ column }: { column: Column }) {
+  const pop = usePopover();
+  return (
+    <>
+      <button
+        type="button"
+        title="List color"
+        aria-label={`Color for ${column.name}`}
+        onClick={pop.toggle}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded hover:bg-hover"
+      >
+        <span
+          className={cx('h-4 w-4 rounded-full', !column.color && 'border-2 border-dashed border-ink-subtle/60')}
+          style={column.color ? { background: column.color } : undefined}
+        />
+      </button>
+      {pop.open && (
+        <Popover anchor={pop.anchor} onClose={pop.close} title="List color">
+          <ColumnColorPicker column={column} onDone={pop.close} />
+        </Popover>
+      )}
+    </>
   );
 }
 

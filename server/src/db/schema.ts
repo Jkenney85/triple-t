@@ -55,6 +55,8 @@ export const columns = sqliteTable(
     name: text('name').notNull(),
     position: real('position').notNull(),
     isDone: integer('is_done', { mode: 'boolean' }).notNull().default(false),
+    /** Optional "#rrggbb" tint for the list. */
+    color: text('color'),
   },
   (t) => [index('columns_board_idx').on(t.boardId)],
 );
