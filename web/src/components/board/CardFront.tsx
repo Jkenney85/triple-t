@@ -25,7 +25,14 @@ export interface CardFrontData {
   videoCount: number;
   isToday: boolean;
   inDone: boolean;
+  /** Has a due date and its list outlines due cards: gets the highlighter outline. */
+  outlineDue: boolean;
 }
+
+/** Highlighter-yellow outline with a soft glow, readable on light and dark lists. */
+const HIGHLIGHTER = '0 0 0 3px #ffe500, 0 0 10px 2px rgba(255, 229, 0, 0.55)';
+/** Cards whose day of week is today get a gold stripe down the left edge. */
+const TODAY_STRIPE = 'inset 4px 0 0 #e2b203';
 
 export const LabelPill = ({ label, compact }: { label: Label; compact?: boolean }) => (
   <span
@@ -53,7 +60,7 @@ export const Banner = ({ color, text, size = 'card' }: { color: string; text: st
 );
 
 function CardFrontImpl({ data, dragging }: { data: CardFrontData; dragging?: boolean }) {
-  const { card, labels, frontFields, values, commentCount, videoCount, isToday, inDone } = data;
+  const { card, labels, frontFields, values, commentCount, videoCount, isToday, inDone, outlineDue } = data;
   const tz = useSession((s) => s.tz);
   const due = inDone ? null : dueStatus(card.dueAt);
   const totals = frontFields
@@ -62,9 +69,13 @@ function CardFrontImpl({ data, dragging }: { data: CardFrontData; dragging?: boo
 
   return (
     <div
+      style={{
+        // Today: a stripe down the left edge. Due date: the highlighter outline. They can combine.
+        boxShadow: [isToday && TODAY_STRIPE, outlineDue ? HIGHLIGHTER : dragging ? 'var(--pop-shadow)' : 'var(--card-shadow)'].filter(Boolean).join(', '),
+      }}
+      title={outlineDue ? 'Has a due date' : undefined}
       className={cx(
         'rounded-lg bg-card text-ink shadow-card',
-        isToday && 'ring-2 ring-[#f5cd47]/60 dark:ring-[#cf9f02]/70',
         dragging && 'rotate-[3deg] shadow-pop',
       )}
     >

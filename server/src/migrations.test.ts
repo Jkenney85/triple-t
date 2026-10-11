@@ -33,3 +33,20 @@ describe('0004 monthly metrics migration', () => {
     ]);
   });
 });
+
+describe('0006 due date outline migration', () => {
+  it('turns the outline off only for Needs Recording lists', () => {
+    const db = new Database(':memory:');
+    db.exec(`
+      create table columns (id integer primary key, name text not null);
+      insert into columns values (1, 'To Do'), (2, 'Needs Recording'), (3, 'needs recording 🎥'), (4, 'Recorded');
+    `);
+    for (const sql of statements('0006_highlight_due.sql')) db.exec(sql);
+    expect(db.prepare('select id, highlight_due as h from columns order by id').all()).toEqual([
+      { id: 1, h: 1 },
+      { id: 2, h: 0 },
+      { id: 3, h: 0 },
+      { id: 4, h: 1 },
+    ]);
+  });
+});

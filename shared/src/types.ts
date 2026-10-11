@@ -33,6 +33,8 @@ export interface Column {
   /** Optional "#rrggbb" tint for the list, or null. */
   color: string | null;
   sort: ColumnSort;
+  /** Cards in this list that have a due date get a highlighter outline. */
+  highlightDue: boolean;
 }
 
 export interface Label {

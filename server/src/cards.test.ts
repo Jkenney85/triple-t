@@ -188,6 +188,19 @@ describe('list sort', () => {
   });
 });
 
+describe('due date outline', () => {
+  it('is on for lists by default, off for Needs Recording lists, and can be toggled', async () => {
+    expect(todo().highlightDue).toBe(true);
+    const nr = (await call('POST', `/api/boards/${board.board.id}/columns`, { name: 'Needs  recording' })).body.columns![0];
+    expect(nr.highlightDue).toBe(false);
+    const other = (await call('POST', `/api/boards/${board.board.id}/columns`, { name: 'Posted' })).body.columns![0];
+    expect(other.highlightDue).toBe(true);
+    expect((await call('PATCH', `/api/columns/${nr.id}`, { highlightDue: true })).body.columns![0].highlightDue).toBe(true);
+    await call('DELETE', `/api/columns/${nr.id}`, {});
+    await call('DELETE', `/api/columns/${other.id}`, {});
+  });
+});
+
 describe('list colors', () => {
   it('sets, normalizes and clears a list color, and rejects anything else', async () => {
     const id = todo().id;

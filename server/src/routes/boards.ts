@@ -30,6 +30,9 @@ const labelColor = z.string().refine((c) => isLabelColor(c), 'Pick a label color
 const fieldType = z.enum(FIELD_TYPES as [FieldType, ...FieldType[]]);
 const totalMode = z.enum(['sum', 'avg', 'none']);
 
+/** Lists where due dates are expected, so their cards aren't outlined by default. */
+const NEEDS_RECORDING = /needs\s+recording/i;
+
 export const SEED_COLUMNS = [
   { name: 'To Do', isDone: false },
   { name: 'In Progress', isDone: false },
@@ -214,7 +217,7 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
       .get()?.max;
     const column = db
       .insert(s.columns)
-      .values({ boardId, name: body.name, position: (max ?? 0) + POSITION_GAP })
+      .values({ boardId, name: body.name, position: (max ?? 0) + POSITION_GAP, highlightDue: !NEEDS_RECORDING.test(body.name) })
       .returning()
       .get();
     touchBoard(boardId);
@@ -235,6 +238,7 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
           .nullable()
           .optional(),
         sort: z.enum(['day', 'title', 'due']).optional(),
+        highlightDue: z.boolean().optional(),
       }),
       req.body,
     );

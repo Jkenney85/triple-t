@@ -61,6 +61,8 @@ export const columns = sqliteTable(
     sort: text('sort', { enum: ['day', 'title', 'due'] })
       .notNull()
       .default('day'),
+    /** Outline cards that have a due date (off for "Needs Recording" lists). */
+    highlightDue: integer('highlight_due', { mode: 'boolean' }).notNull().default(true),
   },
   (t) => [index('columns_board_idx').on(t.boardId)],
 );

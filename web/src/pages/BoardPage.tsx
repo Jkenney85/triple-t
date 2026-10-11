@@ -128,6 +128,7 @@ export default function BoardPage() {
         videoCount: vids.length,
         isToday: card.dayOfWeek === today && !inDone,
         inDone,
+        outlineDue: card.dueAt != null && !!columns[card.columnId]?.highlightDue,
       };
     }
     return out;

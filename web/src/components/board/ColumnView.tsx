@@ -181,6 +181,16 @@ function ColumnHeader({
             <span className="flex-1">Sort cards by</span>
             <span className="text-xs text-ink-subtle">{COLUMN_SORT_LABELS[column.sort]}</span>
           </MenuItem>
+          <MenuItem onClick={() => void updateColumn(column, { highlightDue: !column.highlightDue }).catch(() => {})}>
+            <span className="flex-1">Outline cards with a due date</span>
+            <span
+              role="switch"
+              aria-checked={column.highlightDue}
+              className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', column.highlightDue ? 'bg-[#ffe500]' : 'bg-ink-subtle/30')}
+            >
+              <span className={cx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-[left]', column.highlightDue ? 'left-[18px]' : 'left-0.5')} />
+            </span>
+          </MenuItem>
           <MenuItem onClick={() => setMenuView('color')}>
             <span className="flex-1">List color</span>
             <span
