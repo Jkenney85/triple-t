@@ -163,7 +163,7 @@ function CardDetail({ card, onClose }: { card: Card; onClose: () => void }) {
                   )}
                 >
                   <Clock size={15} />
-                  {card.dueAt != null ? formatDue(card.dueAt) : 'None'}
+                  {card.dueAt != null ? formatDue(card.dueAt, tz) : 'None'}
                   {!inDone && due === 'overdue' && <span className="rounded-sm bg-white/25 px-1 text-xs">Overdue</span>}
                   {!inDone && due === 'soon' && <span className="rounded-sm bg-black/10 px-1 text-xs">Due soon</span>}
                   {inDone && card.dueAt != null && <span className="rounded-sm bg-[#1f845a] px-1 text-xs text-white">Complete</span>}

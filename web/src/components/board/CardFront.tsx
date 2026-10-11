@@ -13,6 +13,7 @@ import {
 } from '@triple-t/shared';
 import { cx } from '../ui';
 import { formatDue } from '../../lib/format';
+import { useSession } from '../../stores/session';
 
 export interface CardFrontData {
   card: Card;
@@ -53,6 +54,7 @@ export const Banner = ({ color, text, size = 'card' }: { color: string; text: st
 
 function CardFrontImpl({ data, dragging }: { data: CardFrontData; dragging?: boolean }) {
   const { card, labels, frontFields, values, commentCount, videoCount, isToday, inDone } = data;
+  const tz = useSession((s) => s.tz);
   const due = inDone ? null : dueStatus(card.dueAt);
   const totals = frontFields
     .map((f) => ({ field: f, total: computeTotal(f, values[f.id] ?? []) }))
@@ -99,7 +101,7 @@ function CardFrontImpl({ data, dragging }: { data: CardFrontData; dragging?: boo
               title={due === 'overdue' ? 'Overdue' : due === 'soon' ? 'Due within 24 hours' : 'Due date'}
             >
               {inDone ? <CheckCircle2 size={13} /> : <Clock size={13} />}
-              {formatDue(card.dueAt, true)}
+              {formatDue(card.dueAt, tz, true)}
             </span>
           )}
           {commentCount > 0 && (

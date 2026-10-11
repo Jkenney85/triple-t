@@ -55,6 +55,7 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
   - Last write wins.
   - Text fields use `useDraft` so incoming updates don't overwrite a field the user is typing in. Every field saves without a Save button, on blur. Notes save on click or tap outside the notes section, Tab out, Escape, or when the card closes (the unmount save in `NotesEditor`); only "Discard changes" throws an edit away.
   - Reconnecting rejoins the room and reloads the full board.
+- **Due dates are date-only:** `cards.due_at` stores 23:59:59.999 of the chosen day in the server `TZ` (`endOfDayInTz` in `shared/due.ts`, which handles DST). That makes a card amber on its due day and red the day after. The picker is a calendar in `DuePopover`, and clicking a day saves and closes. Show due dates with `formatDue(ms, tz)` so the day matches the board's time zone, not the viewer's.
 - **Metrics are monthly:** `video_values` is keyed by (video, field, month `YYYY-MM`) and holds raw strings. On the wire it's `Video.months[month][fieldId]`, and `PATCH /api/videos/:id` requires `{ month, values }`.
   - Totals are calculated, never stored: `computeTotal(field, videos.flatMap(v => videoFieldValues(v, field.id, period)))`, where `period` is `'all'` or a month (`shared/months.ts`). Sum fields add across months; average fields average every monthly entry.
   - The board-wide period (`useBoard.period`, remembered per board in localStorage) drives the card-front badges and the card's Totals tiles.

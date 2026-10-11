@@ -1,11 +1,16 @@
 const sameYear = (d: Date) => d.getFullYear() === new Date().getFullYear();
 
-/** "Oct 4" on the card front, "Oct 4, 5:00 PM" in the card detail. */
-export function formatDue(ms: number, short = false): string {
-  const d = new Date(ms);
-  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(sameYear(d) ? {} : { year: 'numeric' }) });
-  if (short) return date;
-  return `${date}, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+/** Due dates are date-only: "Oct 4" on the card front, "Sun, Oct 4" in the card detail. */
+export function formatDue(ms: number, timeZone: string, short = false): string {
+  const thisYear = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(new Date());
+  const year = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(new Date(ms));
+  return new Date(ms).toLocaleDateString('en-US', {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    ...(short ? {} : { weekday: 'short' }),
+    ...(year === thisYear ? {} : { year: 'numeric' }),
+  });
 }
 
 export function formatDateTime(ms: number): string {
@@ -28,12 +33,4 @@ export function timeAgo(ms: number): string {
   const days = Math.round(h / 24);
   if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
   return formatDateTime(ms);
-}
-
-/** Value for <input type="datetime-local"> in the browser's local time. */
-export function toLocalInput(ms: number | null): string {
-  if (ms == null) return '';
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

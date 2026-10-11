@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, Pencil } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import {
   BANNER_SWATCHES,
   DAYS,
   LABEL_COLORS,
   LABEL_GRADIENTS,
+  addDays,
+  endOfDayInTz,
+  sameYmd,
+  ymdInTz,
+  type YMD,
   gradientValue,
   isHexColor,
   parseGradientValue,
@@ -14,9 +19,9 @@ import {
   type Label,
 } from '@triple-t/shared';
 import { createLabel, deleteLabel, updateCard, updateLabel } from '../../lib/actions';
-import { toLocalInput } from '../../lib/format';
 import { useBoard } from '../../stores/board';
-import { Button, Popover, confirmDialog, cx, inputClass } from '../ui';
+import { useSession } from '../../stores/session';
+import { Button, IconButton, Popover, confirmDialog, cx, inputClass } from '../ui';
 import { Banner } from './CardFront';
 
 interface PopProps {
@@ -390,52 +395,95 @@ export function DayPopover({ card, anchor, onClose, inDone }: PopProps & { inDon
 
 // ---- Due date ----
 
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/**
+ * Date-only due date picker. Clicking a day (or a shortcut) saves and closes
+ * straight away; the card is due through the end of that day in the board's time zone.
+ */
 export function DuePopover({ card, anchor, onClose }: PopProps) {
-  const [value, setValue] = useState(toLocalInput(card.dueAt ?? defaultDue()));
+  const tz = useSession((s) => s.tz);
+  const today = ymdInTz(Date.now(), tz);
+  const selected = card.dueAt != null ? ymdInTz(card.dueAt, tz) : null;
+  const [view, setView] = useState(() => ({ y: (selected ?? today).y, m: (selected ?? today).m }));
 
-  function defaultDue() {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(17, 0, 0, 0);
-    return d.getTime();
-  }
-
-  const save = (ms: number | null) => {
-    void updateCard(card, { dueAt: ms }).catch(() => {});
+  const pick = (day: YMD | null) => {
+    void updateCard(card, { dueAt: day ? endOfDayInTz(day, tz) : null }).catch(() => {});
     onClose();
   };
 
-  const quick = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    d.setHours(17, 0, 0, 0);
-    return d.getTime();
+  // Six weeks starting on the Sunday on or before the 1st of the month.
+  const firstWeekday = new Date(Date.UTC(view.y, view.m - 1, 1)).getUTCDay();
+  const start = addDays({ y: view.y, m: view.m, d: 1 }, -firstWeekday);
+  const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  const monthLabel = new Date(Date.UTC(view.y, view.m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const shift = (delta: number) => {
+    const d = addDays({ y: view.y, m: view.m, d: 1 }, delta > 0 ? 32 : -1);
+    setView({ y: d.y, m: d.m });
   };
 
   return (
-    <Popover anchor={anchor} onClose={onClose} title="Due date" width={280}>
-      <div className="mb-3 flex gap-1">
-        {[
-          ['Today', 0],
-          ['Tomorrow', 1],
-          ['In a week', 7],
-        ].map(([label, days]) => (
-          <Button key={label} className="flex-1 px-1 text-xs" onClick={() => setValue(toLocalInput(quick(days as number)))}>
+    <Popover anchor={anchor} onClose={onClose} title="Due date" width={288}>
+      <div className="mb-3 grid grid-cols-3 gap-1">
+        {(
+          [
+            ['Today', 0],
+            ['Tomorrow', 1],
+            ['Next week', 7],
+          ] as const
+        ).map(([label, n]) => (
+          <Button key={label} className="px-1 text-xs" onClick={() => pick(addDays(today, n))}>
             {label}
           </Button>
         ))}
       </div>
-      <input type="datetime-local" className={inputClass + ' h-10'} value={value} onChange={(e) => setValue(e.target.value)} />
-      <div className="mt-3 flex gap-2">
-        <Button tone="primary" className="flex-1" disabled={!value} onClick={() => save(new Date(value).getTime())}>
-          Save
-        </Button>
-        {card.dueAt != null && (
-          <Button className="flex-1" onClick={() => save(null)}>
-            Remove
-          </Button>
-        )}
+
+      <div className="mb-1 flex items-center justify-between">
+        <IconButton label="Previous month" onClick={() => shift(-1)}>
+          <ChevronLeft size={16} />
+        </IconButton>
+        <span className="text-sm font-semibold">{monthLabel}</span>
+        <IconButton label="Next month" onClick={() => shift(1)}>
+          <ChevronRight size={16} />
+        </IconButton>
       </div>
+      <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-ink-subtle">
+        {WEEKDAYS.map((w, i) => (
+          <span key={i} className="py-1">
+            {w}
+          </span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5" role="grid" aria-label={monthLabel}>
+        {days.map((day) => {
+          const inMonth = day.m === view.m;
+          const isSelected = sameYmd(day, selected);
+          const isToday = sameYmd(day, today);
+          return (
+            <button
+              key={`${day.y}-${day.m}-${day.d}`}
+              type="button"
+              onClick={() => pick(day)}
+              aria-label={new Date(Date.UTC(day.y, day.m - 1, day.d)).toLocaleDateString('en-US', { dateStyle: 'full', timeZone: 'UTC' })}
+              aria-pressed={isSelected}
+              className={cx(
+                'flex h-9 items-center justify-center rounded text-sm sm:h-8',
+                isSelected ? 'bg-accent font-semibold text-accent-ink' : 'hover:bg-hover',
+                !isSelected && !inMonth && 'text-ink-subtle/50',
+                !isSelected && isToday && 'font-bold text-accent ring-1 ring-inset ring-accent',
+              )}
+            >
+              {day.d}
+            </button>
+          );
+        })}
+      </div>
+
+      {card.dueAt != null && (
+        <Button className="mt-3 w-full" onClick={() => pick(null)}>
+          Remove due date
+        </Button>
+      )}
     </Popover>
   );
 }
