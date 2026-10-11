@@ -6,3 +6,4 @@ export * from './due';
 export * from './tiktok';
 export * from './validation';
 export * from './filter';
+export * from './months';

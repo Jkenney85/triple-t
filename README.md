@@ -86,7 +86,8 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
 - **List colors:** use a list's **⋯** menu, then **List color**, or the colored dot in **Settings → Lists**. Lists get a soft tint in light mode and a deeper one in dark mode.
 - **Labels** belong to each board. Each one can be any of 40 colors, 15 left-to-right gradients, or a custom color or two-color gradient. Create them in **Settings → Labels** or right from a card's **Labels** popover.
 - **Metric fields** are per board: **Settings → Fields**. New boards start with Views (number), CTR (percent), Sales (number), and GMV (currency, USD).
-  - Values are entered on each video in the card.
+  - Values are entered **per month** on each video. Use the ‹ › arrows next to "Metrics for" to pick the month. Each video shows its all-time totals and a **History** table of every month; click a row to edit that month.
+  - The **calendar** button in the board bar (All time, or a month) sets what the card badges and card totals show.
   - The card shows a total for each field. Number and currency default to *sum*, percent to *average*.
   - Turn on **On card** to show that total as a badge on the board.
 - **Videos.** Paste a `tiktok.com` or `vm.tiktok.com` link.

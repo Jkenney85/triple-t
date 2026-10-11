@@ -85,16 +85,16 @@ export function loadVideos(db: DB, where: SQL | undefined): Video[] {
       ),
     )
     .all();
-  const byVideo = new Map<number, Record<string, string>>();
+  const byVideo = new Map<number, Record<string, Record<string, string>>>();
   for (const v of values) {
-    const rec = byVideo.get(v.videoId) ?? {};
-    rec[String(v.fieldId)] = v.value;
-    byVideo.set(v.videoId, rec);
+    const months = byVideo.get(v.videoId) ?? {};
+    (months[v.month] ??= {})[String(v.fieldId)] = v.value;
+    byVideo.set(v.videoId, months);
   }
   return rows.map((r) => toVideo(r, byVideo.get(r.id) ?? {}));
 }
 
-export function toVideo(r: VideoRow, values: Record<string, string>): Video {
+export function toVideo(r: VideoRow, months: Record<string, Record<string, string>>): Video {
   return {
     id: r.id,
     cardId: r.cardId,
@@ -105,7 +105,7 @@ export function toVideo(r: VideoRow, values: Record<string, string>): Video {
     status: r.status,
     error: r.error,
     position: r.position,
-    values,
+    months,
     createdBy: r.createdBy,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,

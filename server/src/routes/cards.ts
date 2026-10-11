@@ -9,6 +9,7 @@ import {
   appendPosition,
   dayForColumn,
   dayRank,
+  isMonth,
   isTikTokUrl,
   sortCards,
   validateCardInput,
@@ -346,7 +347,14 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
   app.patch('/api/videos/:id', async (req) => {
     const id = idParam(req);
     const { card } = videoWithCard(id);
-    const body = parseBody(z.object({ values: z.record(z.string(), z.union([z.string(), z.number(), z.null()])) }), req.body);
+    const body = parseBody(
+      z.object({
+        month: z.string().refine((m) => isMonth(m), 'Month must look like 2026-10'),
+        values: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
+      }),
+      req.body,
+    );
+    const { month } = body;
     const boardFields = db.select().from(s.fields).where(eq(s.fields.boardId, card.boardId)).all();
     const cleaned: { fieldId: number; value: string }[] = [];
     for (const [key, raw] of Object.entries(body.values)) {
@@ -359,11 +367,13 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
     db.transaction((tx) => {
       for (const { fieldId, value } of cleaned) {
         if (value === '') {
-          tx.delete(s.videoValues).where(and(eq(s.videoValues.videoId, id), eq(s.videoValues.fieldId, fieldId))).run();
+          tx.delete(s.videoValues)
+            .where(and(eq(s.videoValues.videoId, id), eq(s.videoValues.fieldId, fieldId), eq(s.videoValues.month, month)))
+            .run();
         } else {
           tx.insert(s.videoValues)
-            .values({ videoId: id, fieldId, value })
-            .onConflictDoUpdate({ target: [s.videoValues.videoId, s.videoValues.fieldId], set: { value } })
+            .values({ videoId: id, fieldId, month, value })
+            .onConflictDoUpdate({ target: [s.videoValues.videoId, s.videoValues.fieldId, s.videoValues.month], set: { value } })
             .run();
         }
       }

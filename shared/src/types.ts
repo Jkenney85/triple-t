@@ -91,8 +91,8 @@ export interface Video {
   status: VideoStatus;
   error: string | null;
   position: number;
-  /** fieldId -> raw value */
-  values: Record<string, string>;
+  /** Metric values by month: "YYYY-MM" -> fieldId -> raw value. */
+  months: Record<string, Record<string, string>>;
   createdBy: number | null;
   createdAt: number;
   updatedAt: number;

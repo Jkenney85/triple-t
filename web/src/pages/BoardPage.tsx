@@ -31,6 +31,7 @@ import {
   computeDropPosition,
   dayForColumn,
   sortCards,
+  videoFieldValues,
   weekdayInTz,
   type CardFilter,
   type Column,
@@ -67,7 +68,7 @@ export default function BoardPage() {
   const [params, setParams] = useSearchParams();
   const openCardId = params.get('card') ? Number(params.get('card')) : null;
 
-  const { board, status, error, columns, cards, labels, fields, videos, comments } = useBoard();
+  const { board, status, error, columns, cards, labels, fields, videos, comments, period } = useBoard();
   const tz = useSession((s) => s.tz);
   const today = useToday(tz);
 
@@ -113,7 +114,7 @@ export default function BoardPage() {
     for (const card of Object.values(cards)) {
       const vids = videosByCard[card.id] ?? [];
       const values: Record<number, string[]> = {};
-      for (const f of frontFields) values[f.id] = vids.map((v) => v.values[f.id]).filter((x): x is string => x != null);
+      for (const f of frontFields) values[f.id] = vids.flatMap((v) => videoFieldValues(v, f.id, period));
       const inDone = !!columns[card.columnId]?.isDone;
       out[card.id] = {
         card,
@@ -127,7 +128,7 @@ export default function BoardPage() {
       };
     }
     return out;
-  }, [cards, labels, frontFields, videosByCard, commentsByCard, columns, today]);
+  }, [cards, labels, frontFields, videosByCard, commentsByCard, columns, today, period]);
 
   const { visibleByColumn, totalByColumn } = useMemo(() => {
     const visible: Record<number, number[]> = {};

@@ -181,7 +181,9 @@ export const videoValues = sqliteTable(
     fieldId: integer('field_id')
       .notNull()
       .references(() => fields.id, { onDelete: 'cascade' }),
+    /** Calendar month the numbers are for, "YYYY-MM". */
+    month: text('month').notNull(),
     value: text('value').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.videoId, t.fieldId] }), index('video_values_field_idx').on(t.fieldId)],
+  (t) => [primaryKey({ columns: [t.videoId, t.fieldId, t.month] }), index('video_values_field_idx').on(t.fieldId)],
 );

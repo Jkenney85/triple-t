@@ -149,6 +149,24 @@ describe('comments on videos', () => {
   });
 });
 
+describe('monthly video metrics', () => {
+  it('stores each month separately and requires a month', async () => {
+    const { body } = await call('POST', `/api/boards/${board.board.id}/cards`, { columnId: todo().id, title: 'Monthly' });
+    const videoId = (await call('POST', `/api/cards/${body.cards![0].id}/videos`, { url: 'https://www.tiktok.com/@nobody/video/2' })).body.videos![0].id;
+    const views = board.fields.find((f) => f.name === 'Views')!.id;
+
+    expect((await call('PATCH', `/api/videos/${videoId}`, { values: { [views]: '10' } })).status).toBe(400);
+    expect((await call('PATCH', `/api/videos/${videoId}`, { month: '2026-13', values: { [views]: '10' } })).status).toBe(400);
+
+    await call('PATCH', `/api/videos/${videoId}`, { month: '2026-09', values: { [views]: '1,000' } });
+    const res = await call('PATCH', `/api/videos/${videoId}`, { month: '2026-10', values: { [views]: '500' } });
+    expect(res.body.videos![0].months).toEqual({ '2026-09': { [views]: '1000' }, '2026-10': { [views]: '500' } });
+
+    const cleared = await call('PATCH', `/api/videos/${videoId}`, { month: '2026-09', values: { [views]: '' } });
+    expect(cleared.body.videos![0].months).toEqual({ '2026-10': { [views]: '500' } });
+  });
+});
+
 describe('label colors', () => {
   it('accepts solid and gradient label colors and rejects raw CSS', async () => {
     const boardId = board.board.id;

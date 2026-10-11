@@ -1,10 +1,16 @@
-import { useMemo, useState } from 'react';
-import { ExternalLink, Loader2, Play, RefreshCw, Sigma, Trash2, Video as VideoIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Loader2, Play, RefreshCw, Sigma, Trash2, Video as VideoIcon } from 'lucide-react';
 import {
   computeTotal,
+  formatMonth,
   formatNumber,
   isNumericType,
   isTikTokUrl,
+  monthInTz,
+  monthsWithData,
+  parseNumeric,
+  shiftMonth,
+  videoFieldValues,
   type Card,
   type Comment,
   type Field,
@@ -13,6 +19,8 @@ import {
 import { addVideo, deleteVideo, refreshVideo, setVideoValue } from '../../lib/actions';
 import { useDraft } from '../../lib/useDraft';
 import { useBoard } from '../../stores/board';
+import { useSession } from '../../stores/session';
+import PeriodPicker from './PeriodPicker';
 import { VideoComments } from './CommentsSection';
 import { Button, IconButton, confirmDialog, cx, inputClass } from '../ui';
 
@@ -85,24 +93,31 @@ export default function VideosSection({
 }
 
 function Totals({ videos, fields }: { videos: Video[]; fields: Field[] }) {
+  const period = useBoard((s) => s.period);
   const totals = useMemo(
     () =>
       fields
         .filter((f) => isNumericType(f.type) && f.totalMode !== 'none')
-        .map((f) => ({ field: f, total: computeTotal(f, videos.map((v) => v.values[f.id])) })),
-    [fields, videos],
+        .map((f) => ({ field: f, total: computeTotal(f, videos.flatMap((v) => videoFieldValues(v, f.id, period))) })),
+    [fields, videos, period],
   );
   if (totals.length === 0) return null;
   return (
-    <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {totals.map(({ field, total }) => (
-        <div key={field.id} className="rounded-lg bg-sunken px-3 py-2">
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-            <Sigma size={11} /> {field.name} {field.totalMode === 'avg' ? 'avg' : 'total'}
+    <div className="mb-3">
+      <div className="mb-1.5 flex items-center gap-2 text-xs text-ink-subtle">
+        <span className="font-semibold">Totals across videos for</span>
+        <PeriodPicker variant="inline" />
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {totals.map(({ field, total }) => (
+          <div key={field.id} className="rounded-lg bg-sunken px-3 py-2">
+            <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
+              <Sigma size={11} /> {field.name} {field.totalMode === 'avg' ? 'avg' : 'total'}
+            </div>
+            <div className="text-lg font-semibold">{total === null ? '—' : formatNumber(field.type, total)}</div>
           </div>
-          <div className="text-lg font-semibold">{total === null ? '—' : formatNumber(field.type, total)}</div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -169,26 +184,136 @@ function VideoRow({ video, fields, boardId, comments }: { video: Video; fields: 
           </div>
         </div>
       </div>
-      {fields.length > 0 && (
-        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {fields.map((f) => (
-            <MetricInput key={f.id} field={f} video={live} boardId={boardId} />
-          ))}
-        </div>
-      )}
+      {fields.length > 0 && <VideoMetrics video={live} fields={fields} boardId={boardId} />}
       <VideoComments video={live} comments={comments} boardId={boardId} />
     </div>
   );
 }
 
-function MetricInput({ field, video, boardId }: { field: Field; video: Video; boardId: number }) {
-  const remote = video.values[field.id] ?? '';
+/**
+ * Per-month metrics for one video. TikTok reports numbers by period, so each
+ * month is entered separately; the all-time line and history roll them up.
+ */
+function VideoMetrics({ video, fields, boardId }: { video: Video; fields: Field[]; boardId: number }) {
+  const period = useBoard((s) => s.period);
+  const tz = useSession((s) => s.tz);
+  const current = monthInTz(new Date(), tz);
+  const [month, setMonth] = useState(period !== 'all' ? period : current);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Picking a month for the whole board jumps every video to it.
+  useEffect(() => {
+    if (period !== 'all') setMonth(period);
+  }, [period]);
+
+  const history = monthsWithData([video]);
+  const totalFields = fields.filter((f) => isNumericType(f.type) && f.totalMode !== 'none');
+  const allTime = totalFields
+    .map((f) => ({ field: f, total: computeTotal(f, videoFieldValues(video, f.id, 'all')) }))
+    .filter((t) => t.total !== null);
+
+  return (
+    <div className="mt-2.5">
+      <div className="mb-1.5 flex items-center gap-1">
+        <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Metrics for</span>
+        <IconButton label="Previous month" className="h-7 w-7" onClick={() => setMonth(shiftMonth(month, -1))}>
+          <ChevronLeft size={15} />
+        </IconButton>
+        <span className="min-w-[72px] text-center text-sm font-semibold">{formatMonth(month)}</span>
+        <IconButton
+          label="Next month"
+          className="h-7 w-7 disabled:opacity-30"
+          disabled={month >= current}
+          onClick={() => setMonth(shiftMonth(month, 1))}
+        >
+          <ChevronRight size={15} />
+        </IconButton>
+        {month !== current && (
+          <button type="button" className="ml-1 text-xs text-accent hover:underline" onClick={() => setMonth(current)}>
+            This month
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {fields.map((f) => (
+          <MetricInput key={`${f.id}-${month}`} field={f} video={video} month={month} boardId={boardId} />
+        ))}
+      </div>
+
+      {history.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-subtle">
+          {allTime.length > 0 && (
+            <span>
+              <span className="font-semibold">All time:</span>{' '}
+              {allTime.map(({ field, total }, i) => (
+                <span key={field.id}>
+                  {i > 0 && ' · '}
+                  <span className="font-semibold text-ink">{formatNumber(field.type, total!, { compact: true })}</span> {field.name}
+                </span>
+              ))}
+            </span>
+          )}
+          <button
+            type="button"
+            aria-expanded={showHistory}
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex items-center gap-1 font-semibold hover:text-ink"
+          >
+            History ({history.length} {history.length === 1 ? 'month' : 'months'})
+            <ChevronDown size={13} className={cx('transition-transform', showHistory && 'rotate-180')} />
+          </button>
+        </div>
+      )}
+
+      {showHistory && history.length > 0 && (
+        <div className="mt-2 overflow-x-auto rounded-md border border-line">
+          <table className="w-full text-xs">
+            <thead className="bg-sunken text-left text-ink-subtle">
+              <tr>
+                <th className="px-2 py-1.5 font-semibold">Month</th>
+                {fields.map((f) => (
+                  <th key={f.id} className="px-2 py-1.5 text-right font-semibold">
+                    {f.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((m) => (
+                <tr
+                  key={m}
+                  onClick={() => setMonth(m)}
+                  className={cx('cursor-pointer border-t border-line hover:bg-hover', m === month && 'bg-accent/10')}
+                  title="Edit this month"
+                >
+                  <td className="px-2 py-1.5 font-medium">{formatMonth(m)}</td>
+                  {fields.map((f) => {
+                    const raw = video.months[m]?.[f.id];
+                    const n = isNumericType(f.type) ? parseNumeric(raw) : null;
+                    return (
+                      <td key={f.id} className="px-2 py-1.5 text-right tabular-nums">
+                        {raw == null ? '—' : n !== null ? formatNumber(f.type, n) : raw}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricInput({ field, video, month, boardId }: { field: Field; video: Video; month: string; boardId: number }) {
+  const remote = video.months[month]?.[field.id] ?? '';
   const { draft, setDraft, setEditing } = useDraft(remote);
   const numeric = isNumericType(field.type);
 
   function save() {
     setEditing(false);
-    if (draft.trim() !== remote) void setVideoValue(boardId, video, field.id, draft.trim()).catch(() => {});
+    if (draft.trim() !== remote) void setVideoValue(boardId, video, month, field.id, draft.trim()).catch(() => {});
   }
 
   return (
@@ -206,6 +331,7 @@ function MetricInput({ field, video, boardId }: { field: Field; video: Video; bo
           onBlur={save}
           onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
           placeholder={numeric ? '0' : ''}
+          aria-label={`${field.name} for ${formatMonth(month, 'long')}`}
         />
         {field.type === 'percent' && <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-ink-subtle">%</span>}
       </span>

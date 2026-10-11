@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Board, BoardState, Card, Column, Comment, Field, Label, Patch, PresenceUser, Video } from '@triple-t/shared';
+import { isMonth, type Board, type BoardState, type Card, type Column, type Comment, type Field, type Label, type MetricPeriod, type Patch, type PresenceUser, type Video } from '@triple-t/shared';
 import { ApiError, get } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { toast } from './ui';
@@ -24,6 +24,9 @@ interface BoardStore extends Entities {
   presence: PresenceUser[];
   /** Bumped whenever the archived-items list changes, so the archive view can refetch. */
   archivedVersion: number;
+  /** Which metrics the card badges and totals show: all time, or one "YYYY-MM" month. */
+  period: MetricPeriod;
+  setPeriod(period: MetricPeriod): void;
   open(boardId: number): Promise<void>;
   close(): void;
   reload(): Promise<void>;
@@ -89,9 +92,13 @@ function patchEntities(state: Entities, p: Patch): Partial<Entities> {
   if (p.removed?.fields?.length) {
     const videos = slice('videos');
     for (const v of Object.values(videos)) {
-      const values = { ...v.values };
-      for (const id of p.removed.fields) delete values[id];
-      videos[v.id] = { ...v, values };
+      const months: typeof v.months = {};
+      for (const [month, values] of Object.entries(v.months)) {
+        const kept = { ...values };
+        for (const id of p.removed.fields) delete kept[id];
+        months[month] = kept;
+      }
+      videos[v.id] = { ...v, months };
     }
   }
   if (p.removed?.labels?.length) {
@@ -145,6 +152,17 @@ export const useBoard = create<BoardStore>((set, getState) => {
     error: null,
     presence: [],
     archivedVersion: 0,
+    period: 'all',
+
+    setPeriod(period) {
+      const id = getState().boardId;
+      set({ period });
+      try {
+        if (id != null) localStorage.setItem(`ttt-period-${id}`, period);
+      } catch {
+        // storage unavailable; the choice just won't be remembered
+      }
+    },
 
     async open(boardId) {
       bindSocket();
@@ -152,7 +170,14 @@ export const useBoard = create<BoardStore>((set, getState) => {
       if (prev === boardId && getState().status !== 'error') return;
       const socket = getSocket();
       if (prev != null && prev !== boardId) socket.emit('board:leave', prev);
-      set({ ...emptyEntities(), boardId, board: null, status: 'loading', error: null, presence: [] });
+      let period: MetricPeriod = 'all';
+      try {
+        const saved = localStorage.getItem(`ttt-period-${boardId}`);
+        if (saved && (saved === 'all' || isMonth(saved))) period = saved;
+      } catch {
+        // storage unavailable
+      }
+      set({ ...emptyEntities(), boardId, board: null, status: 'loading', error: null, presence: [], period });
       if (socket.connected) socket.emit('board:join', boardId);
       await getState().reload();
     },

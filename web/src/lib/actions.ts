@@ -142,12 +142,13 @@ export const deleteComment = (boardId: number, id: number) =>
 export const addVideo = (card: Card, url: string) =>
   board().mutate(null, () => post<Patch>(`/api/cards/${card.id}/videos`, { url }));
 
-export function setVideoValue(boardId: number, video: Video, fieldId: number, value: string) {
-  const values = { ...video.values };
+/** Saves one metric for one month of a video. An empty value clears it. */
+export function setVideoValue(boardId: number, video: Video, month: string, fieldId: number, value: string) {
+  const values = { ...(video.months[month] ?? {}) };
   if (value.trim() === '') delete values[fieldId];
   else values[fieldId] = value;
-  return board().mutate({ boardId, videos: [{ ...video, values }] }, () =>
-    patch<Patch>(`/api/videos/${video.id}`, { values: { [fieldId]: value } }),
+  return board().mutate({ boardId, videos: [{ ...video, months: { ...video.months, [month]: values } }] }, () =>
+    patch<Patch>(`/api/videos/${video.id}`, { month, values: { [fieldId]: value } }),
   );
 }
 

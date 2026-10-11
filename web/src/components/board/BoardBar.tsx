@@ -13,6 +13,7 @@ import { updateBoard } from '../../lib/actions';
 import { useBoard } from '../../stores/board';
 import { useSession } from '../../stores/session';
 import { Avatar, Button, Popover, cx, inputClass, usePopover } from '../ui';
+import PeriodPicker from './PeriodPicker';
 
 export default function BoardBar({
   board,
@@ -87,7 +88,12 @@ export default function BoardBar({
         </div>
       )}
 
-      <button type="button" className={cx(btn, count > 0 && 'bg-white/90 text-[#172b4d] hover:bg-white')} onClick={filterPop.toggle}>
+      <PeriodPicker variant="bar" />
+      <button
+        type="button"
+        className={count > 0 ? 'flex h-9 items-center gap-1.5 rounded bg-white/90 px-2.5 text-sm font-medium text-[#172b4d] hover:bg-white' : btn}
+        onClick={filterPop.toggle}
+      >
         <Filter size={16} />
         <span className="hidden sm:inline">Filter</span>
         {count > 0 && <span className="rounded-full bg-[#0c66e4] px-1.5 text-xs text-white">{count}</span>}
