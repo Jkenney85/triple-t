@@ -83,6 +83,7 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
 
 - **Done list.** Each board has exactly one Done list. The seeded **Done** list starts as it. Change it in **Settings → Lists** or from a list's **⋯** menu. Moving a card into Done clears its day. A list can't be deleted while it's the Done list.
 - **Deleting a list** that still has cards asks which list to move them to.
+- **Sorting a list:** use the list's **⋯** menu, then **Sort cards by**: **Day of week** (the default, with drag to reorder within a day), **A to Z**, or **Due date** (soonest first). A–Z and due-date lists show a small tag in the header and keep themselves in order. You can still drag cards in and out, but not reorder within them.
 - **List colors:** use a list's **⋯** menu, then **List color**, or the colored dot in **Settings → Lists**. Lists get a soft tint in light mode and a deeper one in dark mode.
 - **Labels** belong to each board. Each one can be any of 40 colors, 15 left-to-right gradients, or a custom color or two-color gradient. Create them in **Settings → Labels** or right from a card's **Labels** popover.
 - **Metric fields** are per board: **Settings → Fields**. New boards start with Views (number), CTR (percent), Sales (number), and GMV (currency, USD).

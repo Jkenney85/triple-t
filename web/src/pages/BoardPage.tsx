@@ -30,9 +30,12 @@ import {
   cardMatchesFilter,
   computeDropPosition,
   dayForColumn,
+  appendPosition,
   sortCards,
+  sortCardsBy,
   videoFieldValues,
   weekdayInTz,
+  type Card,
   type CardFilter,
   type Column,
 } from '@triple-t/shared';
@@ -138,13 +141,16 @@ export default function BoardPage() {
       total[col.id] = 0;
     }
     const now = Date.now();
-    for (const card of sortCards(Object.values(cards))) {
+    const byColumn: Record<number, Card[]> = {};
+    for (const card of Object.values(cards)) {
       if (!(card.columnId in visible)) continue;
       total[card.columnId]++;
       if (cardMatchesFilter(card, filter, { comments: commentsByCard[card.id] ?? [], videos: videosByCard[card.id] ?? [], now })) {
-        visible[card.columnId].push(card.id);
+        (byColumn[card.columnId] ??= []).push(card);
       }
     }
+    // Each list orders its cards by its own sort setting.
+    for (const col of sortedColumns) visible[col.id] = sortCardsBy(byColumn[col.id] ?? [], col.sort).map((c) => c.id);
     return { visibleByColumn: visible, totalByColumn: total };
   }, [cards, sortedColumns, filter, commentsByCard, videosByCard]);
 
@@ -265,11 +271,20 @@ export default function BoardPage() {
       if (newIndex >= 0 && oldIndex !== newIndex) list = arrayMove(list, oldIndex, newIndex);
     }
     const column = columns[colId];
-    const index = list.indexOf(cardId);
-    const others = list.filter((id) => id !== cardId).map((id) => cards[id]);
-    // Dragging never changes the day: the drop snaps into the card's own day group.
     const day = dayForColumn(card.dayOfWeek, column.isDone);
-    const position = computeDropPosition(others, index, day);
+    let position: number;
+    if (column.sort === 'day') {
+      // Dragging never changes the day: the drop snaps into the card's own day group.
+      const index = list.indexOf(cardId);
+      const others = list.filter((id) => id !== cardId).map((id) => cards[id]);
+      position = computeDropPosition(others, index, day);
+    } else {
+      // A to Z and due-date lists order themselves, so reordering within one does nothing.
+      if (colId === card.columnId) return;
+      // Keep a sensible manual order in case the list goes back to day-of-week sorting.
+      const others = sortCards(Object.values(cards).filter((c) => c.columnId === colId && c.id !== cardId));
+      position = appendPosition(others, day);
+    }
     // Dropped back where it started: nothing to save.
     if (colId === card.columnId && list.join() === (visibleByColumn[colId] ?? []).join()) return;
     void moveCard(card, column, position).catch(() => {});

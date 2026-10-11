@@ -62,3 +62,32 @@ export function weekdayInTz(date: Date, timeZone: string): number {
   const short = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date);
   return DAY_SHORT.indexOf(short as (typeof DAY_SHORT)[number]);
 }
+
+export const COLUMN_SORTS = ['day', 'title', 'due'] as const;
+
+export const COLUMN_SORT_LABELS: Record<(typeof COLUMN_SORTS)[number], string> = {
+  day: 'Day of week',
+  title: 'A to Z',
+  due: 'Due date',
+};
+
+const titleCollator = new Intl.Collator('en-US', { sensitivity: 'base', numeric: true });
+
+/**
+ * Orders a list's cards by its sort setting. "day" is the original order
+ * (day groups, then manual position). "title" is A to Z. "due" puts the
+ * soonest due date first and cards without one last. Ties fall back to "day".
+ */
+export function sortCardsBy<T extends Sortable & { title: string; dueAt: number | null }>(
+  cards: readonly T[],
+  sort: 'day' | 'title' | 'due',
+): T[] {
+  if (sort === 'title') return [...cards].sort((a, b) => titleCollator.compare(a.title, b.title) || compareCards(a, b));
+  if (sort === 'due') {
+    return [...cards].sort((a, b) => {
+      if (a.dueAt == null || b.dueAt == null) return (a.dueAt == null ? 1 : 0) - (b.dueAt == null ? 1 : 0) || compareCards(a, b);
+      return a.dueAt - b.dueAt || compareCards(a, b);
+    });
+  }
+  return sortCards(cards);
+}

@@ -1,6 +1,8 @@
 export type FieldType = 'number' | 'percent' | 'currency' | 'text' | 'url' | 'date';
 export type TotalMode = 'sum' | 'avg' | 'none';
 export type VideoStatus = 'pending' | 'ok' | 'error';
+/** How a list orders its cards. "day" is the default: day-of-week groups, then manual order. */
+export type ColumnSort = 'day' | 'title' | 'due';
 
 export interface PublicUser {
   id: number;
@@ -30,6 +32,7 @@ export interface Column {
   isDone: boolean;
   /** Optional "#rrggbb" tint for the list, or null. */
   color: string | null;
+  sort: ColumnSort;
 }
 
 export interface Label {

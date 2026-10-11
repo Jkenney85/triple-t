@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircle2, MoreHorizontal, Plus, X } from 'lucide-react';
-import type { Column } from '@triple-t/shared';
+import { ArrowDownAZ, CalendarClock, CalendarDays, Check, CheckCircle2, MoreHorizontal, Plus, X } from 'lucide-react';
+import { COLUMN_SORTS, COLUMN_SORT_LABELS, type Column, type ColumnSort } from '@triple-t/shared';
 import { createCard, setDoneColumn, updateColumn } from '../../lib/actions';
 import { Button, IconButton, Popover, cx, usePopover } from '../ui';
 import { CardFront, type CardFrontData } from './CardFront';
@@ -95,7 +95,7 @@ function ColumnHeader({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(column.name);
   const menu = usePopover();
-  const [menuView, setMenuView] = useState<'actions' | 'color'>('actions');
+  const [menuView, setMenuView] = useState<'actions' | 'color' | 'sort'>('actions');
 
   useEffect(() => {
     if (!menu.open) setMenuView('actions');
@@ -138,6 +138,15 @@ function ColumnHeader({
         >
           <span className="break-words">{column.name}</span>
           {column.isDone && <CheckCircle2 size={14} className="shrink-0 text-[#1f845a] dark:text-[#4bce97]" aria-label="Done list" />}
+          {column.sort !== 'day' && (
+            <span
+              className="flex shrink-0 items-center gap-0.5 rounded bg-hover px-1 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle"
+              title={`Sorted by ${COLUMN_SORT_LABELS[column.sort].toLowerCase()}`}
+            >
+              {column.sort === 'title' ? <ArrowDownAZ size={11} /> : <CalendarClock size={11} />}
+              {column.sort === 'title' ? 'A–Z' : 'Due'}
+            </span>
+          )}
           <span className="ml-auto pl-1 text-xs font-normal text-ink-subtle">{count}</span>
         </button>
       )}
@@ -145,9 +154,11 @@ function ColumnHeader({
         <MoreHorizontal size={16} />
       </IconButton>
       {menu.open && (
-        <Popover anchor={menu.anchor} onClose={menu.close} title={menuView === 'color' ? 'List color' : 'List actions'}>
+        <Popover anchor={menu.anchor} onClose={menu.close} title={menuView === 'color' ? 'List color' : menuView === 'sort' ? 'Sort cards by' : 'List actions'}>
           {menuView === 'color' ? (
             <ColumnColorPicker column={column} />
+          ) : menuView === 'sort' ? (
+            <SortPicker column={column} onDone={menu.close} />
           ) : (
           <>
           <MenuItem
@@ -165,6 +176,10 @@ function ColumnHeader({
             }}
           >
             Rename list
+          </MenuItem>
+          <MenuItem onClick={() => setMenuView('sort')}>
+            <span className="flex-1">Sort cards by</span>
+            <span className="text-xs text-ink-subtle">{COLUMN_SORT_LABELS[column.sort]}</span>
           </MenuItem>
           <MenuItem onClick={() => setMenuView('color')}>
             <span className="flex-1">List color</span>
@@ -298,6 +313,48 @@ function CardComposer({ column, onClose, onAdded }: { column: Column; onClose: (
           <X size={18} />
         </IconButton>
       </div>
+    </div>
+  );
+}
+
+const SORT_HELP: Record<ColumnSort, string> = {
+  day: 'Sunday to Saturday, then cards with no day. Drag to reorder within a day.',
+  title: 'Alphabetical by title. Order is automatic.',
+  due: 'Soonest due date first; cards without one at the bottom. Order is automatic.',
+};
+
+const SORT_ICON: Record<ColumnSort, React.ReactNode> = {
+  day: <CalendarDays size={16} />,
+  title: <ArrowDownAZ size={16} />,
+  due: <CalendarClock size={16} />,
+};
+
+function SortPicker({ column, onDone }: { column: Column; onDone: () => void }) {
+  return (
+    <div className="flex flex-col gap-1" role="radiogroup" aria-label="Sort cards by">
+      {COLUMN_SORTS.map((sort) => (
+        <button
+          key={sort}
+          type="button"
+          role="radio"
+          aria-checked={column.sort === sort}
+          onClick={() => {
+            if (sort !== column.sort) void updateColumn(column, { sort }).catch(() => {});
+            onDone();
+          }}
+          className={cx(
+            'flex items-start gap-2.5 rounded px-2 py-2 text-left',
+            column.sort === sort ? 'bg-accent/15' : 'hover:bg-hover',
+          )}
+        >
+          <span className="mt-0.5 text-ink-subtle">{SORT_ICON[sort]}</span>
+          <span className="flex-1">
+            <span className="block text-sm font-medium">{COLUMN_SORT_LABELS[sort]}</span>
+            <span className="block text-xs text-ink-subtle">{SORT_HELP[sort]}</span>
+          </span>
+          {column.sort === sort && <Check size={16} className="mt-0.5 text-accent" />}
+        </button>
+      ))}
     </div>
   );
 }

@@ -57,6 +57,10 @@ export const columns = sqliteTable(
     isDone: integer('is_done', { mode: 'boolean' }).notNull().default(false),
     /** Optional "#rrggbb" tint for the list. */
     color: text('color'),
+    /** How the list orders its cards: day (default), title (A to Z) or due (soonest first). */
+    sort: text('sort', { enum: ['day', 'title', 'due'] })
+      .notNull()
+      .default('day'),
   },
   (t) => [index('columns_board_idx').on(t.boardId)],
 );

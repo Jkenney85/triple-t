@@ -1,0 +1,1 @@
+ALTER TABLE `columns` ADD `sort` text DEFAULT 'day' NOT NULL;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appendPosition, computeDropPosition, dayForColumn, dayRank, sortCards, weekdayInTz } from './days';
+import { appendPosition, computeDropPosition, dayForColumn, dayRank, sortCards, sortCardsBy, weekdayInTz } from './days';
 
 const card = (id: number, dayOfWeek: number | null, position: number) => ({ id, dayOfWeek, position });
 
@@ -80,5 +80,28 @@ describe('weekdayInTz', () => {
     const d = new Date('2026-10-05T03:00:00Z');
     expect(weekdayInTz(d, 'America/Chicago')).toBe(0);
     expect(weekdayInTz(d, 'UTC')).toBe(1);
+  });
+});
+
+describe('list sort options', () => {
+  const c = (id: number, title: string, dueAt: number | null, dayOfWeek: number | null = null, position = id) => ({ id, title, dueAt, dayOfWeek, position });
+  const cards = [
+    c(1, 'banana slicer', 300, 3),
+    c(2, 'Apple peeler', null, 0),
+    c(3, 'item 10', 100, null),
+    c(4, 'Item 9', null, 1),
+    c(5, 'cherry pitter', 200, 0),
+  ];
+
+  it('day of week keeps the original order', () => {
+    expect(sortCardsBy(cards, 'day').map((x) => x.id)).toEqual([2, 5, 4, 1, 3]);
+  });
+
+  it('A to Z ignores case and orders numbers naturally', () => {
+    expect(sortCardsBy(cards, 'title').map((x) => x.title)).toEqual(['Apple peeler', 'banana slicer', 'cherry pitter', 'Item 9', 'item 10']);
+  });
+
+  it('due date puts the soonest first and undated cards last (in day order)', () => {
+    expect(sortCardsBy(cards, 'due').map((x) => x.id)).toEqual([3, 5, 1, 2, 4]);
   });
 });

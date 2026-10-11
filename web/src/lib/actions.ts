@@ -86,7 +86,7 @@ export function setDoneColumn(boardId: number, columnId: number) {
 export const createColumn = (boardId: number, name: string) =>
   board().mutate(null, () => post<Patch>(`/api/boards/${boardId}/columns`, { name }));
 
-export function updateColumn(col: Column, changes: Partial<Pick<Column, 'name' | 'position' | 'color'>>) {
+export function updateColumn(col: Column, changes: Partial<Pick<Column, 'name' | 'position' | 'color' | 'sort'>>) {
   return board().mutate({ boardId: col.boardId, columns: [{ ...col, ...changes }] }, () =>
     patch<Patch>(`/api/columns/${col.id}`, changes),
   );

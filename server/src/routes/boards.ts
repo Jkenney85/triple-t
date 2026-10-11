@@ -234,6 +234,7 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
           .transform((c) => c.toLowerCase())
           .nullable()
           .optional(),
+        sort: z.enum(['day', 'title', 'due']).optional(),
       }),
       req.body,
     );

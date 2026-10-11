@@ -178,6 +178,16 @@ describe('label colors', () => {
   });
 });
 
+describe('list sort', () => {
+  it('defaults to day of week and accepts only known sorts', async () => {
+    const id = todo().id;
+    expect(todo().sort).toBe('day');
+    expect((await call('PATCH', `/api/columns/${id}`, { sort: 'title' })).body.columns![0].sort).toBe('title');
+    expect((await call('PATCH', `/api/columns/${id}`, { sort: 'random' })).status).toBe(400);
+    expect((await call('PATCH', `/api/columns/${id}`, { sort: 'day' })).body.columns![0].sort).toBe('day');
+  });
+});
+
 describe('list colors', () => {
   it('sets, normalizes and clears a list color, and rejects anything else', async () => {
     const id = todo().id;

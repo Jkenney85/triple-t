@@ -49,6 +49,9 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
 ## Core rules (don't break these; tests cover most of them)
 
 - **Card order** is computed, never stored as a list: sort by `dayRank` (Sun=0 … Sat=6, then no day = 7), then `position`, then `id`. `computeDropPosition` clamps a drop into the card's own day group. **Dragging never changes a card's day.**
+- **List sort options:** `columns.sort` is `day` (default: the order above), `title` (A to Z, natural and case-insensitive) or `due` (soonest first, undated last). `sortCardsBy()` in `shared/days.ts` applies it per list in `BoardPage`.
+  - In `title` and `due` lists the order is automatic: reordering within the list is a no-op on drop.
+  - A card dropped into one of those lists gets `appendPosition` within its day group, so the list still has a sensible manual order if it goes back to `day`.
 - **The Done rule:** a card in the board's single `isDone` column always has `dayOfWeek = null`. Every path enforces it on the server via `dayForColumn()`: move, create, update, restore, column delete, and setting the done column. The client applies the same rule optimistically.
 - **Required fields:** only the title. Validation lives in `shared/src/validation.ts` and runs on both sides.
 - **Realtime:** every mutation returns a `Patch` and broadcasts it to room `board:<id>`, skipping the sender (identified by the `x-socket-id` header). The client applies it optimistically, rolls back on error, and then reloads the board.
