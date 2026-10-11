@@ -6,15 +6,29 @@ import {
   isNumericType,
   isTikTokUrl,
   type Card,
+  type Comment,
   type Field,
   type Video,
 } from '@triple-t/shared';
 import { addVideo, deleteVideo, refreshVideo, setVideoValue } from '../../lib/actions';
 import { useDraft } from '../../lib/useDraft';
 import { useBoard } from '../../stores/board';
+import { VideoComments } from './CommentsSection';
 import { Button, IconButton, confirmDialog, cx, inputClass } from '../ui';
 
-export default function VideosSection({ card, videos, fields, inputId }: { card: Card; videos: Video[]; fields: Field[]; inputId: string }) {
+export default function VideosSection({
+  card,
+  videos,
+  fields,
+  comments,
+  inputId,
+}: {
+  card: Card;
+  videos: Video[];
+  fields: Field[];
+  comments: Comment[];
+  inputId: string;
+}) {
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const valid = isTikTokUrl(url.trim());
@@ -46,7 +60,7 @@ export default function VideosSection({ card, videos, fields, inputId }: { card:
 
       <div className="flex flex-col gap-3">
         {videos.map((v) => (
-          <VideoRow key={v.id} video={v} fields={fields} boardId={card.boardId} />
+          <VideoRow key={v.id} video={v} fields={fields} boardId={card.boardId} comments={comments.filter((c) => c.videoId === v.id)} />
         ))}
       </div>
 
@@ -93,7 +107,7 @@ function Totals({ videos, fields }: { videos: Video[]; fields: Field[] }) {
   );
 }
 
-function VideoRow({ video, fields, boardId }: { video: Video; fields: Field[]; boardId: number }) {
+function VideoRow({ video, fields, boardId, comments }: { video: Video; fields: Field[]; boardId: number; comments: Comment[] }) {
   const [imgFailed, setImgFailed] = useState(false);
   const live = useBoard((s) => s.videos[video.id]) ?? video;
   const showThumb = live.thumbnail && !imgFailed;
@@ -162,6 +176,7 @@ function VideoRow({ video, fields, boardId }: { video: Video; fields: Field[]; b
           ))}
         </div>
       )}
+      <VideoComments video={live} comments={comments} boardId={boardId} />
     </div>
   );
 }

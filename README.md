@@ -99,8 +99,9 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
   - or upload a photo as wallpaper (JPEG, PNG, or WebP, up to 25 MB).
 
   Photos are resized to at most 2560px and re-saved as WebP, which also strips location data from phone photos. They're stored under `/data/backgrounds`. The color you pick still shows while a photo loads.
+- **Comments** go on each video: open a card and use **Add a comment** or **Comments (n)** under a video. Card-wide information belongs in Notes. Comments left on cards before this change show under **Earlier comments**.
 - **Archive** a card from its detail view. **Archived** (in the board bar) lists archived cards, where you can restore them or delete them permanently.
-- **Search.** **Filter** in the board bar searches titles, notes, banner text, and comments, and filters by label, day, banner color, due status, and whether a card has videos. The search box in the top bar searches every board and jumps to the card.
+- **Search.** **Filter** in the board bar searches titles, notes, banner text, and video comments, and filters by label, day, banner color, due status, and whether a card has videos. The search box in the top bar searches every board and jumps to the card.
 - **Admin export.** Avatar menu, then **Download JSON export**, gives a full dump of everything except passwords.
 
 ## Data, backups, and restore

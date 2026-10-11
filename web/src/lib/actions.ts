@@ -124,8 +124,8 @@ export const deleteField = (field: Field) =>
 
 // ---- Comments ----
 
-export const addComment = (card: Card, body: string) =>
-  board().mutate(null, () => post<Patch>(`/api/cards/${card.id}/comments`, { body }));
+export const addVideoComment = (video: Video, body: string) =>
+  board().mutate(null, () => post<Patch>(`/api/videos/${video.id}/comments`, { body }));
 
 export function editComment(boardId: number, comment: { id: number; body: string }, body: string) {
   const existing = board().comments[comment.id];

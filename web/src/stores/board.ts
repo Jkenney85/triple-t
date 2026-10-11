@@ -81,6 +81,11 @@ function patchEntities(state: Entities, p: Patch): Partial<Entities> {
     const comments = slice('comments');
     for (const c of Object.values(comments)) if (gone.has(c.cardId)) delete comments[c.id];
   }
+  if (p.removed?.videos?.length) {
+    const gone = new Set(p.removed.videos);
+    const comments = slice('comments');
+    for (const c of Object.values(comments)) if (c.videoId != null && gone.has(c.videoId)) delete comments[c.id];
+  }
   if (p.removed?.fields?.length) {
     const videos = slice('videos');
     for (const v of Object.values(videos)) {

@@ -7,6 +7,7 @@ import { openDb } from './db';
 import { loadConfig } from './env';
 
 let app: FastifyInstance;
+let db: ReturnType<typeof openDb>;
 let cookie = '';
 let board: BoardState;
 const todo = () => board.columns.find((c) => c.name === 'To Do')!;
@@ -20,7 +21,7 @@ async function call<T = Patch>(method: string, url: string, payload?: unknown): 
 
 beforeAll(async () => {
   const config = loadConfig({ NODE_ENV: 'test', DATA_DIR: '/tmp/triple-t-test', TZ: 'America/Chicago' });
-  const db = openDb(':memory:');
+  db = openDb(':memory:');
   await bootstrapAdmin(db, 'admin', 'correct-horse-battery', { info: () => {} });
   ({ app } = await buildApp(db, config, { realtime: false }));
   const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'admin', password: 'correct-horse-battery' } });
@@ -108,6 +109,43 @@ describe('moving into the Done column clears the day (server-enforced)', () => {
     const res = await call('DELETE', `/api/columns/${col.id}`, { moveTo: board.columns[2].id });
     expect(res.status).toBe(200);
     expect(res.body.cards!.find((c) => c.id === body.cards![0].id)).toMatchObject({ columnId: board.columns[2].id, dayOfWeek: null });
+  });
+});
+
+describe('comments on videos', () => {
+  async function cardWithVideo(title: string) {
+    const { body } = await call('POST', `/api/boards/${board.board.id}/cards`, { columnId: todo().id, title });
+    const cardId = body.cards![0].id;
+    // A non-resolvable TikTok URL is fine: the background metadata fetch just records an error.
+    const v = await call('POST', `/api/cards/${cardId}/videos`, { url: 'https://www.tiktok.com/@nobody/video/1' });
+    return { cardId, videoId: v.body.videos![0].id };
+  }
+
+  it('adds a comment to a specific video', async () => {
+    const { cardId, videoId } = await cardWithVideo('Commented');
+    const res = await call('POST', `/api/videos/${videoId}/comments`, { body: 'Great hook in the first 2s' });
+    expect(res.status).toBe(200);
+    expect(res.body.comments![0]).toMatchObject({ cardId, videoId, body: 'Great hook in the first 2s', userId: 1 });
+    const state = (await call<BoardState>('GET', `/api/boards/${board.board.id}`)).body;
+    expect(state.comments.filter((c) => c.videoId === videoId)).toHaveLength(1);
+  });
+
+  it('no longer accepts new card-level comments', async () => {
+    const { cardId } = await cardWithVideo('No card comments');
+    expect((await call('POST', `/api/cards/${cardId}/comments`, { body: 'hi' })).status).toBe(404);
+  });
+
+  it('deletes a video’s comments with the video, leaving earlier card comments alone', async () => {
+    const { cardId, videoId } = await cardWithVideo('Delete video');
+    const c = (await call('POST', `/api/videos/${videoId}/comments`, { body: 'bye' })).body.comments![0];
+    // An earlier card-level comment, as created before comments moved onto videos
+    db.$client.prepare('insert into comments (card_id, user_id, body) values (?, 1, ?)').run(cardId, 'legacy');
+
+    const res = await call('DELETE', `/api/videos/${videoId}`, {});
+    expect(res.status).toBe(200);
+    expect(res.body.removed?.comments).toEqual([c.id]);
+    const left = db.$client.prepare('select body, video_id as videoId from comments where card_id = ?').all(cardId);
+    expect(left).toEqual([{ body: 'legacy', videoId: null }]);
   });
 });
 

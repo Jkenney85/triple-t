@@ -21,7 +21,7 @@ import { toast } from '../../stores/ui';
 import { Avatar, Button, Modal, ModalClose, cx, inputClass, usePopover } from '../ui';
 import { Banner, LabelPill } from './CardFront';
 import { BannerPopover, DayPopover, DuePopover, LabelsPopover } from './CardPopovers';
-import CommentsSection from './CommentsSection';
+import { EarlierCardComments } from './CommentsSection';
 import NotesEditor from './NotesEditor';
 import VideosSection from './VideosSection';
 
@@ -177,9 +177,9 @@ function CardDetail({ card, onClose }: { card: Card; onClose: () => void }) {
 
             <ProductLink card={card} inputRef={linkRef} />
 
-            <VideosSection card={card} videos={videos} fields={fields} inputId={videoInputId} />
+            <VideosSection card={card} videos={videos} fields={fields} comments={comments} inputId={videoInputId} />
 
-            <CommentsSection card={card} comments={comments} />
+            <EarlierCardComments card={card} comments={comments.filter((c) => c.videoId == null)} />
 
             <div className="border-t border-line pt-3 text-xs text-ink-subtle">
               <MetaLine label="Created" userId={card.createdBy} at={card.createdAt} users={users} />

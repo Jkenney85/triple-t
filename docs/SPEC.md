@@ -11,7 +11,8 @@ The owner made these decisions after the spec was written. They take precedence 
 3. **Labels:** per board, with no seeded defaults. A label can be created from inside a card.
 4. **Currency:** USD.
 5. **Nightly backups: deferred** ("we'll add that later"). The admin JSON export is implemented; the README documents manual backup and restore.
-6. **docker-compose.yml:** exactly the owner's Traefik setup, as shown below.
+6. **Comments are per video (2026-10-11):** the card-level Comments section was removed as redundant with Notes. Each video in a card has its own comment thread. Card comments from before the change still show read-only as "Earlier comments" (authors can edit or delete them). The comment badge on the card front counts all of them.
+7. **docker-compose.yml:** exactly the owner's Traefik setup, as shown below.
 
 Implementation choices made where the spec was silent:
 

@@ -281,11 +281,13 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
     body: z.string().trim().min(1, 'Comment is empty').max(LIMITS.comment),
   });
 
-  app.post('/api/cards/:id/comments', async (req) => {
-    const cardId = idParam(req);
-    const card = getCardRow(db, cardId);
+  app.post('/api/videos/:id/comments', async (req) => {
+    const videoId = idParam(req);
+    const video = db.select().from(s.videos).where(eq(s.videos.id, videoId)).get();
+    if (!video) throw notFound('Video not found');
+    const card = getCardRow(db, video.cardId);
     const { body } = parseBody(commentBody, req.body);
-    const comment = db.insert(s.comments).values({ cardId, userId: req.user!.id, body }).returning().get();
+    const comment = db.insert(s.comments).values({ cardId: card.id, videoId, userId: req.user!.id, body }).returning().get();
     return commit(ctx, req, { boardId: card.boardId, comments: [toComment(comment)] });
   });
 
@@ -383,10 +385,23 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
   app.delete('/api/videos/:id', async (req) => {
     const id = idParam(req);
     const { video, card } = videoWithCard(id);
-    db.delete(s.videos).where(eq(s.videos.id, id)).run();
+    const commentIds = db.transaction((tx) => {
+      const ids = tx
+        .delete(s.comments)
+        .where(eq(s.comments.videoId, id))
+        .returning({ id: s.comments.id })
+        .all()
+        .map((c) => c.id);
+      tx.delete(s.videos).where(eq(s.videos.id, id)).run();
+      return ids;
+    });
     db.update(s.cards).set({ updatedAt: Date.now(), updatedBy: req.user!.id }).where(eq(s.cards.id, card.id)).run();
     if (video.thumbnailFile) fs.rm(path.join(config.thumbsDir, video.thumbnailFile), { force: true }, () => {});
-    return commit(ctx, req, { boardId: card.boardId, removed: { videos: [id] }, cards: [loadCard(db, card.id)] });
+    return commit(ctx, req, {
+      boardId: card.boardId,
+      removed: { videos: [id], comments: commentIds },
+      cards: [loadCard(db, card.id)],
+    });
   });
 
   app.get('/api/thumbnails/:file', async (req, reply) => {

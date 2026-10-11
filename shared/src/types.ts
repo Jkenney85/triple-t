@@ -72,6 +72,8 @@ export interface Card {
 export interface Comment {
   id: number;
   cardId: number;
+  /** The video this comment belongs to; null for older card-level comments. */
+  videoId: number | null;
   userId: number;
   body: string;
   createdAt: number;

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
@@ -137,6 +137,8 @@ export const comments = sqliteTable(
     cardId: integer('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
+    /** The video this comment is on. Null for older card-level comments (shown read-only). */
+    videoId: integer('video_id').references((): AnySQLiteColumn => videos.id, { onDelete: 'cascade' }),
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
@@ -144,7 +146,7 @@ export const comments = sqliteTable(
     createdAt: integer('created_at').notNull().default(now),
     updatedAt: integer('updated_at').notNull().default(now),
   },
-  (t) => [index('comments_card_idx').on(t.cardId)],
+  (t) => [index('comments_card_idx').on(t.cardId), index('comments_video_idx').on(t.videoId)],
 );
 
 export const videos = sqliteTable(
