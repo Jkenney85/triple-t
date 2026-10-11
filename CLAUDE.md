@@ -53,7 +53,7 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
 - **Required fields:** only the title. Validation lives in `shared/src/validation.ts` and runs on both sides.
 - **Realtime:** every mutation returns a `Patch` and broadcasts it to room `board:<id>`, skipping the sender (identified by the `x-socket-id` header). The client applies it optimistically, rolls back on error, and then reloads the board.
   - Last write wins.
-  - Text fields use `useDraft` so incoming updates don't overwrite a field the user is typing in.
+  - Text fields use `useDraft` so incoming updates don't overwrite a field the user is typing in. Every field saves without a Save button, on blur. Notes save on click or tap outside the notes section, Tab out, Escape, or when the card closes (the unmount save in `NotesEditor`); only "Discard changes" throws an edit away.
   - Reconnecting rejoins the room and reloads the full board.
 - **Totals** are calculated in `shared/totals.ts` and never stored. Metric values are stored per video as raw strings.
 - **Board backgrounds:** `boards.color` holds a preset id (`BOARD_THEMES` in `shared/color.ts`; ids are stored, so never rename or remove one), a `#rrggbb`, or `gradient:#from:#to:angle`. It's validated by `isBoardColor`; never accept arbitrary CSS. An optional `background_image` is layered over the color by `boardBackground()`. Uploads are always re-encoded with sharp (this also validates them and strips EXIF/GPS), and they're served only to signed-in users from `/api/backgrounds/:file`.

@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bold, Code, Heading2, Italic, Link2, List, ListChecks, ListOrdered, Text } from 'lucide-react';
 import type { Card } from '@triple-t/shared';
 import { updateCard } from '../../lib/actions';
 import { useDraft } from '../../lib/useDraft';
+import { useBoard } from '../../stores/board';
 import Markdown from '../Markdown';
 import { Button, IconButton, cx } from '../ui';
 
@@ -23,6 +24,10 @@ export default function NotesEditor({ card }: { card: Card }) {
   const { draft, setDraft, editing, setEditing, remoteChanged } = useDraft(card.notes);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
   const ref = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
+  // Latest values for the document listener and the unmount save, which outlive a single render.
+  const latest = useRef({ draft, editing, cardId: card.id });
+  latest.current = { draft, editing, cardId: card.id };
 
   function apply({ before, after = '', line, placeholder = '' }: Wrap) {
     const el = ref.current;
@@ -42,11 +47,42 @@ export default function NotesEditor({ card }: { card: Card }) {
     });
   }
 
+  /** Saves the draft if it changed. Uses the store's current card so a stale prop can't overwrite newer fields. */
+  function persist(text: string, cardId: number) {
+    const current = useBoard.getState().cards[cardId];
+    if (current && text !== current.notes) void updateCard(current, { notes: text }).catch(() => {});
+  }
+
   function save() {
     setEditing(false);
     setTab('write');
-    if (draft !== card.notes) void updateCard(card, { notes: draft }).catch(() => {});
+    persist(latest.current.draft, card.id);
   }
+
+  // Clicking or tapping anywhere outside the editor saves, like every other field on the card.
+  useEffect(() => {
+    if (!editing) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (editorRef.current?.contains(target)) return;
+      // The confirm dialog and popovers live outside; let them do their thing without ending the edit.
+      if ((target as Element).closest?.('[data-popover]')) return;
+      save();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
+
+  // Closing the card (X, Escape, clicking the backdrop, or navigating away) saves whatever was typed.
+  useEffect(
+    () => () => {
+      const { draft: text, editing: wasEditing, cardId } = latest.current;
+      if (wasEditing) persist(text, cardId);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   function cancel() {
     setDraft(card.notes);
@@ -55,7 +91,14 @@ export default function NotesEditor({ card }: { card: Card }) {
   }
 
   return (
-    <section>
+    <section
+      ref={editorRef}
+      onBlur={(e) => {
+        // Keyboard users tabbing out of the editor. (Mouse and touch are handled by the pointerdown listener.)
+        const next = e.relatedTarget as Node | null;
+        if (editing && next && !e.currentTarget.contains(next)) save();
+      }}
+    >
       <div className="mb-2 flex items-center gap-2">
         <Text size={18} className="text-ink-subtle" />
         <h3 className="flex-1 text-base font-semibold">Notes</h3>
@@ -70,6 +113,7 @@ export default function NotesEditor({ card }: { card: Card }) {
               <button
                 key={t}
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setTab(t)}
                 className={cx('h-8 rounded px-2.5 text-xs font-semibold capitalize', tab === t ? 'bg-hover text-ink' : 'text-ink-subtle')}
               >
@@ -85,14 +129,21 @@ export default function NotesEditor({ card }: { card: Card }) {
           </div>
           {tab === 'write' ? (
             <textarea
-              ref={ref}
-              autoFocus
+              ref={(el) => {
+                // Start with the cursor after the existing text, ready to add to it.
+                if (el && ref.current !== el) {
+                  el.focus();
+                  el.setSelectionRange(el.value.length, el.value.length);
+                }
+                ref.current = el;
+              }}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
+                  // Escape finishes editing and keeps the text; a second Escape closes the card.
                   e.stopPropagation();
-                  cancel();
+                  save();
                 }
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save();
               }}
@@ -120,12 +171,16 @@ export default function NotesEditor({ card }: { card: Card }) {
       {editing && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Button tone="primary" onClick={save}>
-            Save
+            Done
           </Button>
           <Button tone="ghost" onClick={cancel}>
-            Cancel
+            Discard changes
           </Button>
-          {remoteChanged && <span className="text-xs text-[#a54800] dark:text-[#fea362]">Someone else just edited these notes. Saving will replace their version.</span>}
+          {remoteChanged ? (
+            <span className="text-xs text-[#a54800] dark:text-[#fea362]">Someone else just edited these notes. Yours will replace them when you click away.</span>
+          ) : (
+            <span className="text-xs text-ink-subtle">Saves automatically when you click away.</span>
+          )}
         </div>
       )}
     </section>
