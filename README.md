@@ -84,7 +84,7 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
 - **Done list.** Each board has exactly one Done list. The seeded **Done** list starts as it. Change it in **Settings → Lists** or from a list's **⋯** menu. Moving a card into Done clears its day. A list can't be deleted while it's the Done list.
 - **Deleting a list** that still has cards asks which list to move them to.
 - **List colors:** use a list's **⋯** menu, then **List color**, or the colored dot in **Settings → Lists**. Lists get a soft tint in light mode and a deeper one in dark mode.
-- **Labels** belong to each board. Create them in **Settings → Labels** or right from a card's **Labels** popover.
+- **Labels** belong to each board. Each one can be any of 40 colors, 15 left-to-right gradients, or a custom color or two-color gradient. Create them in **Settings → Labels** or right from a card's **Labels** popover.
 - **Metric fields** are per board: **Settings → Fields**. New boards start with Views (number), CTR (percent), Sales (number), and GMV (currency, USD).
   - Values are entered on each video in the card.
   - The card shows a total for each field. Number and currency default to *sum*, percent to *average*.

@@ -4,6 +4,7 @@ import {
   DAY_SHORT,
   EMPTY_FILTER,
   activeFilterCount,
+  colorFill,
   readableTextColor,
   type Board,
   type CardFilter,
@@ -161,7 +162,7 @@ function FilterForm({ filter, onChange }: { filter: CardFilter; onChange: (f: Ca
             <Row key={l.id} checked={filter.labelIds.includes(l.id)} onToggle={() => set({ labelIds: toggle(filter.labelIds, l.id) })}>
               <span
                 className="flex h-7 flex-1 items-center truncate rounded px-2 text-xs font-semibold"
-                style={{ background: l.color, color: readableTextColor(l.color) }}
+                style={{ background: colorFill(l.color), color: readableTextColor(l.color) }}
               >
                 {l.name || ' '}
               </span>

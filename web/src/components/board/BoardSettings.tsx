@@ -4,6 +4,7 @@ import {
   FIELD_TYPES,
   POSITION_GAP,
   isNumericType,
+  colorFill,
   readableTextColor,
   type Board,
   type Column,
@@ -244,7 +245,7 @@ function Labels({ board }: { board: Board }) {
           const uses = Object.values(cards).filter((c) => c.labelIds.includes(l.id)).length;
           return (
             <li key={l.id} className="flex items-center gap-2">
-              <span className="flex h-8 flex-1 items-center truncate rounded px-3 text-sm font-semibold" style={{ background: l.color, color: readableTextColor(l.color) }}>
+              <span className="flex h-8 flex-1 items-center truncate rounded px-3 text-sm font-semibold" style={{ background: colorFill(l.color), color: readableTextColor(l.color) }}>
                 {l.name || ' '}
               </span>
               <span className="w-14 text-right text-xs text-ink-subtle">

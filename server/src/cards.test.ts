@@ -111,6 +111,17 @@ describe('moving into the Done column clears the day (server-enforced)', () => {
   });
 });
 
+describe('label colors', () => {
+  it('accepts solid and gradient label colors and rejects raw CSS', async () => {
+    const boardId = board.board.id;
+    const solid = await call('POST', `/api/boards/${boardId}/labels`, { name: 'Solid', color: '#4bce97' });
+    expect(solid.status).toBe(200);
+    const grad = await call('POST', `/api/boards/${boardId}/labels`, { name: 'Fade', color: 'gradient:#ff5f6d:#ffc371:90' });
+    expect(grad.body.labels![0].color).toBe('gradient:#ff5f6d:#ffc371:90');
+    expect((await call('POST', `/api/boards/${boardId}/labels`, { name: 'Bad', color: 'linear-gradient(red, blue)' })).status).toBe(400);
+  });
+});
+
 describe('list colors', () => {
   it('sets, normalizes and clears a list color, and rejects anything else', async () => {
     const id = todo().id;

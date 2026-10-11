@@ -5,6 +5,7 @@ import {
   computeTotal,
   dueStatus,
   formatNumber,
+  colorFill,
   readableTextColor,
   type Card,
   type Field,
@@ -31,7 +32,7 @@ export const LabelPill = ({ label, compact }: { label: Label; compact?: boolean 
       'inline-flex max-w-full items-center truncate rounded font-semibold',
       compact ? 'h-4 min-w-10 px-1.5 text-[11px] leading-4' : 'h-8 min-w-12 px-3 text-sm leading-8',
     )}
-    style={{ background: label.color, color: readableTextColor(label.color) }}
+    style={{ background: colorFill(label.color), color: readableTextColor(label.color) }}
     title={label.name}
   >
     {label.name}

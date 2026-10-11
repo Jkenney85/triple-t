@@ -10,6 +10,7 @@ import {
   defaultTotalMode,
   isBoardColor,
   isHexColor,
+  isLabelColor,
   isNumericType,
   sortCards,
   type FieldType,
@@ -25,7 +26,7 @@ import { getBoard, getColumn, loadBoardState, loadCards, toBoard, toColumn, toFi
 
 const boardColor = z.string().refine((c) => isBoardColor(c), 'Unknown board color');
 const name = (what: string) => z.string().trim().min(1, `${what} is required`).max(80);
-const labelColor = z.string().refine((c) => isHexColor(c), 'Pick a label color');
+const labelColor = z.string().refine((c) => isLabelColor(c), 'Pick a label color');
 const fieldType = z.enum(FIELD_TYPES as [FieldType, ...FieldType[]]);
 const totalMode = z.enum(['sum', 'avg', 'none']);
 

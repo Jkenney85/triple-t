@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, Pencil } from 'lucide-react';
 import {
   BANNER_SWATCHES,
   DAYS,
   LABEL_COLORS,
+  LABEL_GRADIENTS,
+  gradientValue,
   isHexColor,
+  parseGradientValue,
+  colorFill,
   readableTextColor,
   type Card,
   type Label,
@@ -21,19 +25,36 @@ interface PopProps {
   onClose: () => void;
 }
 
-function Swatches({ colors, value, onPick }: { colors: string[]; value: string | null; onPick: (c: string) => void }) {
+function Swatches({
+  colors,
+  value,
+  onPick,
+  columns = 5,
+  compact,
+}: {
+  colors: string[];
+  value: string | null;
+  onPick: (c: string) => void;
+  columns?: 5 | 10;
+  compact?: boolean;
+}) {
   return (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div className={cx('grid', columns === 10 ? 'grid-cols-10 gap-1' : 'grid-cols-5 gap-1.5')}>
       {colors.map((c) => (
         <button
           key={c}
           type="button"
-          aria-label={c}
+          aria-label={c.startsWith('gradient:') ? `Gradient ${c.split(':')[1]} to ${c.split(':')[2]}` : c}
+          aria-pressed={value === c}
           onClick={() => onPick(c)}
-          className={cx('flex h-8 items-center justify-center rounded', value === c && 'ring-2 ring-accent ring-offset-2 ring-offset-raised')}
-          style={{ background: c, color: readableTextColor(c) }}
+          className={cx(
+            'flex items-center justify-center rounded',
+            compact ? 'h-7' : 'h-8',
+            value === c && 'ring-2 ring-accent ring-offset-2 ring-offset-raised',
+          )}
+          style={{ background: colorFill(c), color: readableTextColor(c) }}
         >
-          {value === c && <Check size={14} />}
+          {value === c && <Check size={compact ? 12 : 14} />}
         </button>
       ))}
     </div>
@@ -155,7 +176,7 @@ export function LabelsPopover({ card, anchor, onClose }: PopProps) {
               </span>
               <span
                 className="flex h-8 flex-1 items-center truncate rounded px-3 text-sm font-semibold"
-                style={{ background: l.color, color: readableTextColor(l.color) }}
+                style={{ background: colorFill(l.color), color: readableTextColor(l.color) }}
               >
                 {l.name || ' '}
               </span>
@@ -175,6 +196,87 @@ export function LabelsPopover({ card, anchor, onClose }: PopProps) {
         Create a new label
       </Button>
     </Popover>
+  );
+}
+
+/** Any solid color, or a left-to-right gradient between two colors. Changes apply to the preview immediately. */
+function CustomLabelColor({ color, onChange }: { color: string; onChange: (c: string) => void }) {
+  const g = parseGradientValue(color);
+  const [mode, setMode] = useState<'solid' | 'gradient'>(g ? 'gradient' : 'solid');
+  const [solid, setSolid] = useState(isHexColor(color) ? color : '#579dff');
+  const [from, setFrom] = useState(g?.from ?? '#fc5c7d');
+  const [to, setTo] = useState(g?.to ?? '#6a82fb');
+  const lastEmitted = useRef(color);
+
+  // A preset was picked above: start the custom controls from it so it can be fine-tuned.
+  useEffect(() => {
+    if (color === lastEmitted.current) return;
+    lastEmitted.current = color;
+    const pg = parseGradientValue(color);
+    if (pg) {
+      setMode('gradient');
+      setFrom(pg.from);
+      setTo(pg.to);
+    } else if (isHexColor(color)) {
+      setMode('solid');
+      setSolid(color);
+    }
+  }, [color]);
+
+  const emit = (next: { mode?: 'solid' | 'gradient'; solid?: string; from?: string; to?: string }) => {
+    const m = next.mode ?? mode;
+    const value = m === 'solid' ? (next.solid ?? solid) : gradientValue({ from: next.from ?? from, to: next.to ?? to, angle: 90 });
+    lastEmitted.current = value;
+    onChange(value);
+  };
+
+  const picker = (label: string, value: string, set: (v: string) => void, key: 'solid' | 'from' | 'to') => (
+    <label className="flex flex-1 items-center gap-1.5 text-xs text-ink-subtle">
+      <input
+        type="color"
+        aria-label={label}
+        value={value}
+        onChange={(e) => {
+          set(e.target.value);
+          emit({ [key]: e.target.value });
+        }}
+        className="h-8 w-10 shrink-0 cursor-pointer rounded border border-line bg-transparent p-0.5"
+      />
+      {label}
+    </label>
+  );
+
+  return (
+    <div className="mt-3">
+      <div className="mb-2 flex items-center gap-2">
+        <p className="flex-1 text-xs font-semibold text-ink-subtle">Custom</p>
+        <div className="grid grid-cols-2 gap-0.5 rounded-md bg-sunken p-0.5">
+          {(['solid', 'gradient'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setMode(m);
+                emit({ mode: m });
+              }}
+              className={cx('h-7 rounded px-2.5 text-xs font-semibold capitalize', mode === m ? 'bg-raised shadow-card' : 'text-ink-subtle hover:text-ink')}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        {mode === 'solid' ? (
+          picker('Color', solid, setSolid, 'solid')
+        ) : (
+          <>
+            {picker('Left', from, setFrom, 'from')}
+            {picker('Right', to, setTo, 'to')}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -212,14 +314,17 @@ export function LabelEditor({
         <ChevronLeft size={14} /> Back
       </button>
       <div className="mb-3 flex h-14 items-center justify-center rounded bg-sunken px-4">
-        <span className="flex h-8 max-w-full items-center truncate rounded px-3 text-sm font-semibold" style={{ background: color, color: readableTextColor(color) }}>
+        <span className="flex h-8 max-w-full items-center truncate rounded px-3 text-sm font-semibold" style={{ background: colorFill(color), color: readableTextColor(color) }}>
           {name || ' '}
         </span>
       </div>
       <p className="mb-1 text-xs font-semibold text-ink-subtle">Title</p>
       <input className={inputClass} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && void save()} />
-      <p className="mb-1.5 mt-3 text-xs font-semibold text-ink-subtle">Color</p>
-      <Swatches colors={LABEL_COLORS} value={color} onPick={setColor} />
+      <p className="mb-1.5 mt-3 text-xs font-semibold text-ink-subtle">Colors</p>
+      <Swatches colors={LABEL_COLORS} value={color} onPick={setColor} columns={10} compact />
+      <p className="mb-1.5 mt-3 text-xs font-semibold text-ink-subtle">Gradients</p>
+      <Swatches colors={LABEL_GRADIENTS} value={color} onPick={setColor} compact />
+      <CustomLabelColor color={color} onChange={setColor} />
       <div className="mt-4 flex gap-2">
         <Button tone="primary" onClick={() => void save()} disabled={busy}>
           {label ? 'Save' : 'Create'}

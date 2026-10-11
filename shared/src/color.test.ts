@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_THEMES, boardBackground, boardTheme, gradientValue, isBoardColor, parseGradientValue } from './color';
+import {
+  BOARD_THEMES,
+  LABEL_COLORS,
+  LABEL_GRADIENTS,
+  boardBackground,
+  boardTheme,
+  colorFill,
+  gradientValue,
+  isBoardColor,
+  isLabelColor,
+  parseGradientValue,
+  readableTextColor,
+} from './color';
 
 describe('board backgrounds', () => {
   it('round-trips custom gradients', () => {
@@ -29,5 +41,28 @@ describe('board backgrounds', () => {
     expect(boardBackground(board)).toMatch(/^url\("\/api\/backgrounds\/b1-0123456789ab\.webp"\) center \/ cover no-repeat, linear-gradient/);
     expect(boardBackground(board, 'thumb')).toContain('b1-0123456789ab-thumb.webp');
     expect(boardBackground({ color: '#112233', backgroundImage: null })).toBe('#112233');
+  });
+});
+
+describe('label colors', () => {
+  it('accepts solid colors and gradients, nothing else', () => {
+    expect(isLabelColor('#4bce97')).toBe(true);
+    expect(isLabelColor('gradient:#ff5f6d:#ffc371:90')).toBe(true);
+    expect(isLabelColor('ocean')).toBe(false);
+    expect(isLabelColor('linear-gradient(90deg, red, blue)')).toBe(false);
+    expect([...LABEL_COLORS, ...LABEL_GRADIENTS].every(isLabelColor)).toBe(true);
+    expect(new Set([...LABEL_COLORS, ...LABEL_GRADIENTS]).size).toBe(LABEL_COLORS.length + LABEL_GRADIENTS.length);
+  });
+
+  it('renders gradients left to right', () => {
+    expect(colorFill('gradient:#ff5f6d:#ffc371:90')).toBe('linear-gradient(90deg, #ff5f6d 0%, #ffc371 100%)');
+    expect(colorFill('#4bce97')).toBe('#4bce97');
+  });
+
+  it('picks text that stays readable across the whole gradient', () => {
+    expect(readableTextColor(gradientValue({ from: '#ffffff', to: '#f8e6a0', angle: 90 }))).toBe('#000000');
+    expect(readableTextColor(gradientValue({ from: '#000000', to: '#172b4d', angle: 90 }))).toBe('#ffffff');
+    // Light-to-dark: black is unreadable on the dark end, white is still fine on mid yellow
+    expect(readableTextColor(gradientValue({ from: '#f7971e', to: '#232526', angle: 90 }))).toBe('#ffffff');
   });
 });

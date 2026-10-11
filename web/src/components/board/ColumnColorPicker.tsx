@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { LABEL_COLORS, isHexColor, type Column } from '@triple-t/shared';
+import { LIST_COLORS, isHexColor, type Column } from '@triple-t/shared';
 import { updateColumn } from '../../lib/actions';
 import { Button, cx } from '../ui';
 
@@ -24,7 +24,7 @@ export default function ColumnColorPicker({ column, onDone }: { column: Column; 
         <div className="h-8 rounded-md bg-card shadow-card" />
       </div>
       <div className="grid grid-cols-5 gap-1.5">
-        {LABEL_COLORS.map((c) => (
+        {LIST_COLORS.map((c) => (
           <button
             key={c}
             type="button"

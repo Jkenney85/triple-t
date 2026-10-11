@@ -14,13 +14,34 @@ export function relativeLuminance(hex: string): number {
   return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255);
 }
 
-/** Black or white, whichever has the higher WCAG contrast against `hex`. */
-export function readableTextColor(hex: string): '#000000' | '#ffffff' {
-  if (!isHexColor(hex)) return '#000000';
+function contrasts(hex: string) {
   const l = relativeLuminance(hex);
-  const vsWhite = 1.05 / (l + 0.05);
-  const vsBlack = (l + 0.05) / 0.05;
-  return vsBlack >= vsWhite ? '#000000' : '#ffffff';
+  return { white: 1.05 / (l + 0.05), black: (l + 0.05) / 0.05 };
+}
+
+/**
+ * Black or white, whichever has the higher WCAG contrast against `color`.
+ * For a gradient, picks the text color whose worst contrast across the two ends is best.
+ */
+export function readableTextColor(color: string): '#000000' | '#ffffff' {
+  const g = parseGradientValue(color);
+  const stops = g ? [g.from, g.to] : isHexColor(color) ? [color] : [];
+  if (stops.length === 0) return '#000000';
+  const c = stops.map(contrasts);
+  const black = Math.min(...c.map((x) => x.black));
+  const white = Math.min(...c.map((x) => x.white));
+  return black >= white ? '#000000' : '#ffffff';
+}
+
+/** CSS background for a stored color: "#rrggbb" or a "gradient:#from:#to:angle" value. */
+export function colorFill(color: string): string {
+  const g = parseGradientValue(color);
+  return g ? `linear-gradient(${g.angle}deg, ${g.from} 0%, ${g.to} 100%)` : color;
+}
+
+/** Labels can be a solid "#rrggbb" or a gradient value. */
+export function isLabelColor(value: unknown): value is string {
+  return isHexColor(value) || (typeof value === 'string' && parseGradientValue(value) !== null);
 }
 
 export const BANNER_SWATCHES = [
@@ -28,10 +49,38 @@ export const BANNER_SWATCHES = [
   '#1f845a', '#946f00', '#c25100', '#c9372c', '#6e5dc6', '#0c66e4', '#227d9b', '#5b7f24', '#ae4787', '#44546f',
 ];
 
-export const LABEL_COLORS = [
+/** Colors offered for lists (normal and bold rows). */
+export const LIST_COLORS = [
   '#4bce97', '#f5cd47', '#fea362', '#f87168', '#9f8fef', '#579dff', '#6cc3e0', '#94c748', '#e774bb', '#8590a2',
   '#216e4e', '#7f5f01', '#a54800', '#ae2e24', '#5e4db2', '#0055cc', '#206a83', '#4c6b1f', '#943d73', '#626f86',
 ];
+
+/** Solid label colors: subtle, normal, bold and extra hues, ten per row. */
+export const LABEL_COLORS = [
+  '#baf3db', '#f8e6a0', '#fedec8', '#ffd5d2', '#dfd8fd', '#cce0ff', '#c6edfb', '#d3f1a7', '#fdd0ec', '#dcdfe4',
+  '#4bce97', '#f5cd47', '#fea362', '#f87168', '#9f8fef', '#579dff', '#6cc3e0', '#94c748', '#e774bb', '#8590a2',
+  '#216e4e', '#7f5f01', '#a54800', '#ae2e24', '#5e4db2', '#0055cc', '#206a83', '#4c6b1f', '#943d73', '#626f86',
+  '#00b8a9', '#ffb703', '#fb5607', '#e63946', '#7209b7', '#3a86ff', '#0096c7', '#2b9348', '#ff006e', '#172b4d',
+];
+
+/** Left-to-right gradient presets for labels. */
+export const LABEL_GRADIENTS = [
+  ['#ff5f6d', '#ffc371'],
+  ['#f12711', '#f5af19'],
+  ['#f953c6', '#b91d73'],
+  ['#fc5c7d', '#6a82fb'],
+  ['#e55d87', '#5fc3e4'],
+  ['#8e2de2', '#4a00e0'],
+  ['#4568dc', '#b06ab3'],
+  ['#00c6ff', '#0072ff'],
+  ['#2193b0', '#6dd5ed'],
+  ['#11998e', '#38ef7d'],
+  ['#56ab2f', '#a8e063'],
+  ['#f7971e', '#ffd200'],
+  ['#ee9ca7', '#ffdde1'],
+  ['#bdc3c7', '#2c3e50'],
+  ['#232526', '#414345'],
+].map(([from, to]) => gradientValue({ from, to, angle: 90 }));
 
 export interface BoardTheme {
   id: string;
