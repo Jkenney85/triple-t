@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Bold, Code, Heading2, Italic, Link2, List, ListChecks, ListOrdered, Text } from 'lucide-react';
 import type { Card } from '@triple-t/shared';
 import { updateCard } from '../../lib/actions';
@@ -58,6 +58,15 @@ export default function NotesEditor({ card }: { card: Card }) {
     setTab('write');
     persist(latest.current.draft, card.id);
   }
+
+  // When the editor opens (or you switch back from Preview), put the cursor after the existing
+  // text. Only then: running this on every render would yank the cursor to the end as you type.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!editing || tab !== 'write' || !el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editing, tab]);
 
   // Clicking or tapping anywhere outside the editor saves, like every other field on the card.
   useEffect(() => {
@@ -129,14 +138,7 @@ export default function NotesEditor({ card }: { card: Card }) {
           </div>
           {tab === 'write' ? (
             <textarea
-              ref={(el) => {
-                // Start with the cursor after the existing text, ready to add to it.
-                if (el && ref.current !== el) {
-                  el.focus();
-                  el.setSelectionRange(el.value.length, el.value.length);
-                }
-                ref.current = el;
-              }}
+              ref={ref}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {

@@ -89,6 +89,7 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
 - The Docker entrypoint chowns `/data` and then drops to the `node` user with `setpriv`. Bind mounts are often owned by root.
 - `.pt-safe`, `.pb-safe` and `.px-safe` in `index.css` are unlayered, so they **override** Tailwind padding on the same element (this once zeroed the board's left padding). To combine padding with a safe area, use `pl-[max(0.75rem,env(safe-area-inset-left))]`.
 - The board canvas is an outer horizontal scroller with an inner `mx-auto w-max` row. This centers the lists when they fit, without clipping when they overflow (`justify-center` would clip the left side).
+- Never focus or move the cursor from an inline callback ref (`ref={(el) => …}`). React calls it again on every render, so the cursor jumps while you type; this was the notes "jumps to the bottom" bug. Use a `useLayoutEffect` keyed to the moment you mean, such as `[editing, tab]` in `NotesEditor`.
 - iOS: inputs use `text-base` on phones to stop the zoom-on-focus. Cards set `-webkit-touch-callout:none` so long-press starts a drag (TouchSensor, 250ms delay).
 
 ## Status
