@@ -103,6 +103,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: Ctx) {
       comments: db.select().from(s.comments).all(),
       videos: db.select().from(s.videos).all(),
       videoValues: db.select().from(s.videoValues).all(),
+      bannerPresets: db.select().from(s.bannerPresets).all(),
     };
     const stamp = new Date().toISOString().slice(0, 10);
     reply.header('content-disposition', `attachment; filename="triple-t-export-${stamp}.json"`);

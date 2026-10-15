@@ -7,3 +7,4 @@ export * from './tiktok';
 export * from './validation';
 export * from './filter';
 export * from './months';
+export * from './gantt';

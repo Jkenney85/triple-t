@@ -193,3 +193,16 @@ export const videoValues = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.videoId, t.fieldId, t.month] }), index('video_values_field_idx').on(t.fieldId)],
 );
+
+export const bannerPresets = sqliteTable(
+  'banner_presets',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    boardId: integer('board_id')
+      .notNull()
+      .references(() => boards.id, { onDelete: 'cascade' }),
+    color: text('color').notNull(),
+    text: text('text').notNull(),
+  },
+  (t) => [uniqueIndex('banner_presets_board_color_unique').on(t.boardId, t.color)],
+);

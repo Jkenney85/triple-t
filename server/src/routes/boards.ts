@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   FIELD_TYPES,
+  LIMITS,
   POSITION_GAP,
   appendPosition,
   defaultTotalMode,
@@ -331,6 +332,38 @@ export async function boardRoutes(app: FastifyInstance, ctx: Ctx) {
     db.delete(s.labels).where(eq(s.labels.id, id)).run();
     const cards = cardIds.length ? loadCards(db, and(inArray(s.cards.id, cardIds), isNull(s.cards.archivedAt))) : [];
     return commit(ctx, req, { boardId: label.boardId, cards, removed: { labels: [id] } });
+  });
+
+  // ---- Saved banner text per color ----
+
+  app.put('/api/boards/:id/banner-presets', async (req) => {
+    const boardId = idParam(req);
+    getBoard(db, boardId);
+    const body = parseBody(
+      z.object({
+        color: z
+          .string()
+          .refine((c) => isHexColor(c), 'Pick a banner color')
+          .transform((c) => c.toLowerCase()),
+        text: z.string().trim().min(1, 'Type the banner text to save').max(LIMITS.bannerText),
+      }),
+      req.body,
+    );
+    const preset = db
+      .insert(s.bannerPresets)
+      .values({ boardId, ...body })
+      .onConflictDoUpdate({ target: [s.bannerPresets.boardId, s.bannerPresets.color], set: { text: body.text } })
+      .returning()
+      .get();
+    return commit(ctx, req, { boardId, bannerPresets: [preset] });
+  });
+
+  app.delete('/api/banner-presets/:id', async (req) => {
+    const id = idParam(req);
+    const preset = db.select().from(s.bannerPresets).where(eq(s.bannerPresets.id, id)).get();
+    if (!preset) throw notFound('Saved banner not found');
+    db.delete(s.bannerPresets).where(eq(s.bannerPresets.id, id)).run();
+    return commit(ctx, req, { boardId: preset.boardId, removed: { bannerPresets: [id] } });
   });
 
   // ---- Custom metric fields ----

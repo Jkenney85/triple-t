@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { isMonth, type Board, type BoardState, type Card, type Column, type Comment, type Field, type Label, type MetricPeriod, type Patch, type PresenceUser, type Video } from '@triple-t/shared';
+import { isMonth, type BannerPreset, type Board, type BoardState, type Card, type Column, type Comment, type Field, type Label, type MetricPeriod, type Patch, type PresenceUser, type Video } from '@triple-t/shared';
 import { ApiError, get } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { toast } from './ui';
 
-type Kind = 'columns' | 'labels' | 'fields' | 'cards' | 'videos' | 'comments';
-const KINDS: Kind[] = ['columns', 'labels', 'fields', 'cards', 'videos', 'comments'];
+type Kind = 'columns' | 'labels' | 'fields' | 'cards' | 'videos' | 'comments' | 'bannerPresets';
+const KINDS: Kind[] = ['columns', 'labels', 'fields', 'cards', 'videos', 'comments', 'bannerPresets'];
 
 interface Entities {
   columns: Record<number, Column>;
@@ -14,6 +14,7 @@ interface Entities {
   cards: Record<number, Card>;
   videos: Record<number, Video>;
   comments: Record<number, Comment>;
+  bannerPresets: Record<number, BannerPreset>;
 }
 
 interface BoardStore extends Entities {
@@ -38,7 +39,7 @@ interface BoardStore extends Entities {
   mutate(optimistic: Patch | null, request: () => Promise<Patch>): Promise<Patch>;
 }
 
-const emptyEntities = (): Entities => ({ columns: {}, labels: {}, fields: {}, cards: {}, videos: {}, comments: {} });
+const emptyEntities = (): Entities => ({ columns: {}, labels: {}, fields: {}, cards: {}, videos: {}, comments: {}, bannerPresets: {} });
 
 function index<T extends { id: number }>(items: T[]): Record<number, T> {
   const out: Record<number, T> = {};
@@ -55,6 +56,7 @@ function fromState(s: BoardState): Entities & { board: Board } {
     cards: index(s.cards),
     videos: index(s.videos),
     comments: index(s.comments),
+    bannerPresets: index(s.bannerPresets ?? []),
   };
 }
 

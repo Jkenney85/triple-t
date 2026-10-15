@@ -70,6 +70,10 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
   - The setting defaults to on, and is off for lists whose name matches /needs recording/i, both in migration 0006 and when a list is created. It's toggled from the list menu.
   - The "today" highlight is a gold stripe down the left edge (`TODAY_STRIPE`), not a ring, so the two never look alike.
   - `CardFront` sets `boxShadow` inline, so add any new shadow to that list rather than using Tailwind `shadow-*` or `ring-*` classes.
+- **Saved banners:** the `banner_presets` table holds (board, color) → text, unique per board and color. They're in `BoardState.bannerPresets` and patch kind `bannerPresets`, set with `PUT /api/boards/:id/banner-presets` (an upsert) and removed with `DELETE /api/banner-presets/:id`. In `BannerPopover`, picking a color that has a preset also sets the banner text.
+- **Gantt view** (`?view=gantt`, `GanttView.tsx`): shows the same filtered cards as the board, grouped by list in board order.
+  - `ganttSpan()` in `shared/gantt.ts` places each card. The day of week means "this week's plan" (Done clears it), so it goes on that weekday of the current Sunday-start week in `TZ`; the due date is absolute; with both, the bar runs between them and is flagged `late` if the plan is after the due date.
+  - Cards with neither don't appear and are counted below the chart. Clicking a bar opens the card modal over the chart.
 - **List colors:** `columns.color` holds `#rrggbb` or null. The list background is `color-mix(in srgb, <color> var(--list-tint), var(--list))`, which gives a pastel in light mode and a deep shade in dark mode (`--list-tint` is set per theme in `index.css`).
 - **App updates (`web/src/lib/updates.ts`):**
   - The service worker uses `registerType: 'prompt'`, so a new version waits until we hand over.

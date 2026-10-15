@@ -2,6 +2,7 @@ import {
   appendPosition,
   dayForColumn,
   sortCards,
+  type BannerPreset,
   type Board,
   type Card,
   type CardInput,
@@ -95,6 +96,16 @@ export function updateColumn(col: Column, changes: Partial<Pick<Column, 'name' |
 export function deleteColumn(col: Column, moveTo?: number) {
   return board().mutate(null, () => del<Patch>(`/api/columns/${col.id}`, { moveTo }));
 }
+
+// ---- Saved banners ----
+
+export const saveBannerPreset = (boardId: number, color: string, text: string) =>
+  board().mutate(null, () => put<Patch>(`/api/boards/${boardId}/banner-presets`, { color, text }));
+
+export const deleteBannerPreset = (preset: BannerPreset) =>
+  board().mutate({ boardId: preset.boardId, removed: { bannerPresets: [preset.id] } }, () =>
+    del<Patch>(`/api/banner-presets/${preset.id}`),
+  );
 
 // ---- Labels ----
 

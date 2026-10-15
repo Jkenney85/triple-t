@@ -104,6 +104,11 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
   Photos are resized to at most 2560px and re-saved as WebP, which also strips location data from phone photos. They're stored under `/data/backgrounds`. The color you pick still shows while a photo loads.
 - **Comments** go on each video: open a card and use **Add a comment** or **Comments (n)** under a video. Card-wide information belongs in Notes. Comments left on cards before this change show under **Earlier comments**.
 - **Due dates** are dates only: click the due date and pick a day (or Today / Tomorrow / Next week), and it saves straight away. A card turns amber on its due day and red once the day has passed.
+- **Saved banners:** in a card's **Banner** popover, type text and click **Save this text for this color**. After that, picking that color on any card on the board fills the text in, and **Saved banners** at the top of the popover applies a color and its text in one click.
+- **Gantt view:** use **Board | Gantt** in the board bar to see every card with a day of week or a due date on a timeline, grouped by list.
+  - A day of week places the card on that day this week, and a due date marks when it's due. With both, the bar runs from one to the other.
+  - Dashed red means the card is planned for after its due date; a solid red outline means it's overdue.
+  - Use the arrows and **This week** to move around, choose 2, 4 or 8 weeks, and click a bar to open the card. The filter applies here too.
 - **Archive** a card from its detail view. **Archived** (in the board bar) lists archived cards, where you can restore them or delete them permanently.
 - **Search.** **Filter** in the board bar searches titles, notes, banner text, and video comments, and filters by label, day, banner color, due status, and whether a card has videos. The search box in the top bar searches every board and jumps to the card.
 - **Admin export.** Avatar menu, then **Download JSON export**, gives a full dump of everything except passwords.

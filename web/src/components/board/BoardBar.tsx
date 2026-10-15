@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Archive, Check, Filter, Settings } from 'lucide-react';
+import { Archive, ChartGantt, Check, Filter, Settings, SquareKanban } from 'lucide-react';
 import {
   DAY_SHORT,
   EMPTY_FILTER,
@@ -20,11 +20,15 @@ export default function BoardBar({
   filter,
   onFilter,
   onOpenPanel,
+  view,
+  onView,
 }: {
   board: Board;
   filter: CardFilter;
   onFilter: (f: CardFilter) => void;
   onOpenPanel: (p: 'settings' | 'archived') => void;
+  view: 'board' | 'gantt';
+  onView: (v: 'board' | 'gantt') => void;
 }) {
   const presence = useBoard((s) => s.presence);
   const me = useSession((s) => s.me);
@@ -75,6 +79,30 @@ export default function BoardBar({
           {board.name}
         </button>
       )}
+      <div className="ml-1 flex shrink-0 rounded bg-black/25 p-0.5" role="radiogroup" aria-label="View">
+        {(
+          [
+            ['board', 'Board', <SquareKanban key="b" size={15} />],
+            ['gantt', 'Gantt', <ChartGantt key="g" size={15} />],
+          ] as const
+        ).map(([id, label, icon]) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={view === id}
+            title={id === 'gantt' ? 'Gantt chart of cards with a day or due date' : 'Board'}
+            onClick={() => onView(id)}
+            className={cx(
+              'flex h-8 items-center gap-1.5 rounded px-2 text-sm font-medium',
+              view === id ? 'bg-white text-[#172b4d]' : 'text-white hover:bg-white/15',
+            )}
+          >
+            {icon}
+            <span className="hidden sm:inline">{label}</span>
+          </button>
+        ))}
+      </div>
       <div className="flex-1" />
 
       {others.length > 0 && (

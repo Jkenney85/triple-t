@@ -130,8 +130,10 @@ export function loadBoardState(db: DB, boardId: number): BoardState {
   const comments = cardIds.length
     ? db.select().from(s.comments).where(inArray(s.comments.cardId, cardIds)).orderBy(asc(s.comments.createdAt)).all()
     : [];
+  const bannerPresets = db.select().from(s.bannerPresets).where(eq(s.bannerPresets.boardId, boardId)).all();
   return {
     board,
+    bannerPresets,
     columns: columns.map(toColumn),
     labels: labels.map(toLabel),
     fields: fields.map(toField),

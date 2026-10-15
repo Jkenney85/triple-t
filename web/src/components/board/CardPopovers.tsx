@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { Bookmark, Check, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react';
 import {
   BANNER_SWATCHES,
   DAYS,
@@ -18,7 +18,7 @@ import {
   type Card,
   type Label,
 } from '@triple-t/shared';
-import { createLabel, deleteLabel, updateCard, updateLabel } from '../../lib/actions';
+import { createLabel, deleteBannerPreset, deleteLabel, saveBannerPreset, updateCard, updateLabel } from '../../lib/actions';
 import { useBoard } from '../../stores/board';
 import { useSession } from '../../stores/session';
 import { Button, IconButton, Popover, confirmDialog, cx, inputClass } from '../ui';
@@ -71,11 +71,23 @@ function Swatches({
 export function BannerPopover({ card, anchor, onClose }: PopProps) {
   const [text, setText] = useState(card.bannerText);
   const [hex, setHex] = useState(card.bannerColor ?? '');
+  const presetMap = useBoard((s) => s.bannerPresets);
+  const presets = Object.values(presetMap).sort((a, b) => a.text.localeCompare(b.text));
   const color = card.bannerColor;
+  const saved = color ? presets.find((p) => p.color === color) : undefined;
 
   useEffect(() => setHex(card.bannerColor ?? ''), [card.bannerColor]);
 
-  const setColor = (c: string) => void updateCard(card, { bannerColor: c }).catch(() => {});
+  /** Picking a color that has saved text fills the text in too. */
+  const setColor = (c: string) => {
+    const preset = presets.find((p) => p.color === c.toLowerCase());
+    if (preset) {
+      setText(preset.text);
+      void updateCard(card, { bannerColor: c, bannerText: preset.text }).catch(() => {});
+    } else {
+      void updateCard(card, { bannerColor: c }).catch(() => {});
+    }
+  };
   const saveText = () => {
     if (text.trim() !== card.bannerText) void updateCard(card, { bannerText: text.trim() }).catch(() => {});
   };
@@ -86,6 +98,37 @@ export function BannerPopover({ card, anchor, onClose }: PopProps) {
         {color ? <Banner color={color} text={text.trim()} /> : <div className="flex h-6 items-center px-3 text-xs text-ink-subtle">No banner</div>}
         <div className="px-3 py-2 text-sm">{card.title}</div>
       </div>
+
+      {presets.length > 0 && (
+        <>
+          <p className="mb-1.5 text-xs font-semibold text-ink-subtle">Saved banners</p>
+          <div className="mb-3 flex flex-col gap-1">
+            {presets.map((p) => (
+              <div key={p.id} className="group flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setColor(p.color)}
+                  className={cx(
+                    'flex h-8 min-w-0 flex-1 items-center truncate rounded px-2.5 text-left text-xs font-semibold',
+                    color === p.color && card.bannerText === p.text && 'ring-2 ring-accent ring-offset-1 ring-offset-raised',
+                  )}
+                  style={{ background: p.color, color: readableTextColor(p.color) }}
+                >
+                  {p.text}
+                </button>
+                <IconButton
+                  label={`Forget saved banner “${p.text}”`}
+                  className="h-8 w-8 opacity-60 group-hover:opacity-100"
+                  onClick={() => void deleteBannerPreset(p).catch(() => {})}
+                >
+                  <X size={14} />
+                </IconButton>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <p className="mb-1.5 text-xs font-semibold text-ink-subtle">Color</p>
       <Swatches colors={BANNER_SWATCHES} value={color} onPick={setColor} />
       <div className="mt-2 flex items-center gap-2">
@@ -118,9 +161,26 @@ export function BannerPopover({ card, anchor, onClose }: PopProps) {
         onKeyDown={(e) => e.key === 'Enter' && saveText()}
       />
       {!color && text.trim() && <p className="mt-1 text-xs text-ink-subtle">Pick a color to show the banner.</p>}
+      {color && text.trim() && (
+        saved && saved.text === text.trim() ? (
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-ink-subtle">
+            <Check size={13} className="text-[#1f845a] dark:text-[#4bce97]" /> Saved for this color: picking it fills this text in.
+          </p>
+        ) : (
+          <Button
+            className="mt-2 w-full"
+            onClick={() => {
+              saveText();
+              void saveBannerPreset(card.boardId, color, text.trim()).catch(() => {});
+            }}
+          >
+            <Bookmark size={14} /> {saved ? `Replace saved text “${saved.text}” for this color` : 'Save this text for this color'}
+          </Button>
+        )
+      )}
       {color && (
         <Button
-          className="mt-3 w-full"
+          className="mt-2 w-full"
           onClick={() => {
             setText('');
             void updateCard(card, { bannerColor: null, bannerText: '' }).catch(() => {});

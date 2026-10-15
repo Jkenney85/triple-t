@@ -48,6 +48,7 @@ import CardModal from '../components/board/CardModal';
 import { columnBackground } from '../components/board/ColumnColorPicker';
 import { ColumnView, cardKey, colKey } from '../components/board/ColumnView';
 import DeleteColumnDialog from '../components/board/DeleteColumnDialog';
+import GanttView from '../components/board/GanttView';
 import { Button, LogoMark, cx } from '../components/ui';
 import { createColumn, moveCard, updateColumn } from '../lib/actions';
 import { useBoard } from '../stores/board';
@@ -70,6 +71,16 @@ export default function BoardPage() {
   const boardId = Number(useParams().boardId);
   const [params, setParams] = useSearchParams();
   const openCardId = params.get('card') ? Number(params.get('card')) : null;
+  const view: 'board' | 'gantt' = params.get('view') === 'gantt' ? 'gantt' : 'board';
+  const setView = useCallback(
+    (v: 'board' | 'gantt') =>
+      setParams((p) => {
+        if (v === 'gantt') p.set('view', 'gantt');
+        else p.delete('view');
+        return p;
+      }),
+    [setParams],
+  );
 
   const { board, status, error, columns, cards, labels, fields, videos, comments, period } = useBoard();
   const tz = useSession((s) => s.tz);
@@ -337,12 +348,23 @@ export default function BoardPage() {
             filter={filter}
             onFilter={setFilter}
             onOpenPanel={setPanel}
+            view={view}
+            onView={setView}
           />
           {board.archivedAt && (
             <div className="bg-[#f5cd47] px-4 py-2 text-center text-sm font-medium text-[#533f04]">
               This board is archived. Restore it from board settings to keep it in your boards list.
             </div>
           )}
+          {view === 'gantt' ? (
+            <GanttView
+              columns={sortedColumns}
+              cardIdsByColumn={visibleByColumn}
+              cards={cards}
+              labelsById={labels}
+              onOpenCard={openCard}
+            />
+          ) : (
           <DndContext
             sensors={sensors}
             collisionDetection={collisionDetection}
@@ -396,6 +418,7 @@ export default function BoardPage() {
               ) : null}
             </DragOverlay>
           </DndContext>
+          )}
           {filtersOn && (
             <div className="pb-safe pointer-events-none fixed inset-x-0 bottom-3 z-10 flex justify-center">
               <button

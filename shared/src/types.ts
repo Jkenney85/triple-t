@@ -103,6 +103,14 @@ export interface Video {
   updatedAt: number;
 }
 
+/** Remembered banner text for a color on a board. */
+export interface BannerPreset {
+  id: number;
+  boardId: number;
+  color: string;
+  text: string;
+}
+
 export interface BoardState {
   board: Board;
   columns: Column[];
@@ -111,6 +119,7 @@ export interface BoardState {
   cards: Card[];
   videos: Video[];
   comments: Comment[];
+  bannerPresets: BannerPreset[];
 }
 
 export interface Removed {
@@ -120,6 +129,7 @@ export interface Removed {
   cards?: number[];
   videos?: number[];
   comments?: number[];
+  bannerPresets?: number[];
 }
 
 /** Incremental change to a board, sent over Socket.IO and returned from mutations. */
@@ -132,6 +142,7 @@ export interface Patch {
   cards?: Card[];
   videos?: Video[];
   comments?: Comment[];
+  bannerPresets?: BannerPreset[];
   removed?: Removed;
   /** Set when the board's archived-items list changed. */
   archivedChanged?: boolean;

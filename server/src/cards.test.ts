@@ -201,6 +201,24 @@ describe('due date outline', () => {
   });
 });
 
+describe('saved banners', () => {
+  it('remembers one text per color per board, and forgets on request', async () => {
+    const boardId = board.board.id;
+    const first = await call('PUT', `/api/boards/${boardId}/banner-presets`, { color: '#F87168', text: 'Restock' });
+    expect(first.body.bannerPresets![0]).toMatchObject({ color: '#f87168', text: 'Restock' });
+    const replaced = await call('PUT', `/api/boards/${boardId}/banner-presets`, { color: '#f87168', text: 'Reorder now' });
+    expect(replaced.body.bannerPresets![0]).toMatchObject({ id: first.body.bannerPresets![0].id, text: 'Reorder now' });
+    expect((await call('PUT', `/api/boards/${boardId}/banner-presets`, { color: 'red', text: 'x' })).status).toBe(400);
+    expect((await call('PUT', `/api/boards/${boardId}/banner-presets`, { color: '#4bce97', text: '  ' })).status).toBe(400);
+
+    const state = (await call<BoardState>('GET', `/api/boards/${boardId}`)).body;
+    expect(state.bannerPresets).toEqual([{ id: first.body.bannerPresets![0].id, boardId, color: '#f87168', text: 'Reorder now' }]);
+
+    const del = await call('DELETE', `/api/banner-presets/${first.body.bannerPresets![0].id}`, {});
+    expect(del.body.removed?.bannerPresets).toEqual([first.body.bannerPresets![0].id]);
+  });
+});
+
 describe('list colors', () => {
   it('sets, normalizes and clears a list color, and rejects anything else', async () => {
     const id = todo().id;
