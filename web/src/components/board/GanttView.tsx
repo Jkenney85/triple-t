@@ -8,7 +8,6 @@ import {
   dueStatus,
   ganttSpan,
   readableTextColor,
-  weekStartOf,
   ymdInTz,
   type Card,
   type Column,
@@ -19,10 +18,12 @@ import {
 import { useSession } from '../../stores/session';
 import { cx } from '../ui';
 
+/** day = 0 means the days stretch to fill the width (the 1-week view). */
 const ZOOMS = [
-  { weeks: 2, day: 56 },
-  { weeks: 4, day: 36 },
-  { weeks: 8, day: 22 },
+  { weeks: 1, day: 0, label: '1 week' },
+  { weeks: 2, day: 56, label: '2 weeks' },
+  { weeks: 4, day: 36, label: '4 weeks' },
+  { weeks: 8, day: 22, label: '8 weeks' },
 ] as const;
 
 interface Row {
@@ -61,11 +62,13 @@ export default function GanttView({
 }) {
   const tz = useSession((s) => s.tz);
   const today = ymdInTz(Date.now(), tz);
-  const thisWeek = weekStartOf(today);
+  // The chart starts at yesterday, and day-of-week plans roll forward from there.
+  const yesterday = addDays(today, -1);
   const [offsetWeeks, setOffsetWeeks] = useState(0);
-  const [zoom, setZoom] = useState<(typeof ZOOMS)[number]>(ZOOMS[1]);
+  const [zoom, setZoom] = useState<(typeof ZOOMS)[number]>(ZOOMS[0]);
+  const fluid = zoom.day === 0;
 
-  const start = addDays(thisWeek, offsetWeeks * 7);
+  const start = addDays(yesterday, offsetWeeks * 7);
   const dayCount = zoom.weeks * 7;
   const days = useMemo(() => Array.from({ length: dayCount }, (_, i) => addDays(start, i)), [start.y, start.m, start.d, dayCount]);
   const startN = dayNumber(start);
@@ -79,21 +82,21 @@ export default function GanttView({
       for (const id of cardIdsByColumn[column.id] ?? []) {
         const card = cards[id];
         if (!card) continue;
-        const span = ganttSpan(card, thisWeek, tz);
+        const span = ganttSpan(card, yesterday, tz);
         if (!span) {
           hiddenCount++;
           continue;
         }
         rows.push({ card, span, labels: card.labelIds.map((l) => labelsById[l]).filter(Boolean) });
       }
-      rows.sort((a, b) => dayNumber(a.span.start) - dayNumber(b.span.start) || dayNumber(a.span.end) - dayNumber(b.span.end));
+      // Rows keep the list's own order (its sort setting), so the chart matches the board.
       if (rows.length) out.push({ column, rows });
     }
     return { groups: out, hidden: hiddenCount };
-  }, [columns, cardIdsByColumn, cards, labelsById, thisWeek.y, thisWeek.m, thisWeek.d, tz]);
+  }, [columns, cardIdsByColumn, cards, labelsById, yesterday.y, yesterday.m, yesterday.d, tz]);
 
   const labelWidth = 'var(--gantt-label)';
-  const gridTemplate = `${labelWidth} repeat(${dayCount}, ${zoom.day}px)`;
+  const gridTemplate = fluid ? `${labelWidth} repeat(${dayCount}, minmax(64px, 1fr))` : `${labelWidth} repeat(${dayCount}, ${zoom.day}px)`;
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
@@ -113,7 +116,7 @@ export default function GanttView({
           onClick={() => setOffsetWeeks(0)}
           className="h-9 rounded bg-black/30 px-3 text-sm font-medium backdrop-blur-sm hover:bg-black/45"
         >
-          This week
+          Today
         </button>
         <button
           type="button"
@@ -137,7 +140,7 @@ export default function GanttView({
               onClick={() => setZoom(z)}
               className={cx('h-8 rounded px-2.5 text-xs font-semibold', zoom.weeks === z.weeks ? 'bg-white text-[#172b4d]' : 'hover:bg-white/15')}
             >
-              {z.weeks} weeks
+              {z.label}
             </button>
           ))}
         </div>
@@ -151,7 +154,7 @@ export default function GanttView({
             <p className="max-w-sm text-sm text-ink-subtle">Cards show up here once they have a day of week or a due date.</p>
           </div>
         ) : (
-          <div className="relative w-max min-w-full" style={{ ['--day' as string]: `${zoom.day}px` }}>
+          <div className={cx('relative min-w-full', fluid ? 'w-full' : 'w-max')}>
             {/* Header */}
             <div className="sticky top-0 z-20 grid border-b border-line bg-list" style={{ gridTemplateColumns: gridTemplate }}>
               <div className="sticky left-0 z-10 flex items-end bg-list px-3 pb-1.5 text-xs font-semibold text-ink-subtle">Card</div>
@@ -169,7 +172,7 @@ export default function GanttView({
                     )}
                   >
                     <span className="h-3.5 truncate px-0.5 text-[10px] font-semibold uppercase">{firstOfMonth ? fmt(d, { month: 'short' }) : ''}</span>
-                    {zoom.day >= 30 && <span>{DAY_SHORT[weekday].slice(0, zoom.day >= 50 ? 3 : 1)}</span>}
+                    {(fluid || zoom.day >= 30) && <span>{DAY_SHORT[weekday].slice(0, fluid || zoom.day >= 50 ? 3 : 1)}</span>}
                     <span className={cx(n === todayN && 'rounded-full bg-accent px-1 text-accent-ink')}>{d.d}</span>
                   </div>
                 );
@@ -177,7 +180,7 @@ export default function GanttView({
             </div>
 
             {/* Weekend shading and the today line, behind the rows */}
-            <div className="pointer-events-none absolute bottom-0 top-0 grid" style={{ left: 0, gridTemplateColumns: gridTemplate }} aria-hidden>
+            <div className="pointer-events-none absolute inset-0 grid" style={{ gridTemplateColumns: gridTemplate }} aria-hidden>
               <div />
               {days.map((d) => {
                 const n = dayNumber(d);
@@ -269,7 +272,7 @@ function GanttRow({
     .filter(Boolean)
     .join('\n');
 
-  const barWidth = (Math.min(to, dayCount - 1) - Math.max(from, 0) + 1) * dayWidth;
+  const barWidth = (Math.min(to, dayCount - 1) - Math.max(from, 0) + 1) * (dayWidth || 110);
   const showTitle = barWidth >= 90;
 
   return (

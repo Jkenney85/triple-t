@@ -3,7 +3,7 @@
 A self-hosted, Trello-style Kanban board for tracking TikTok Shop products. Each card is a product; each product can have several TikTok videos, each with its own metrics (views, CTR, sales, GMV, or whatever fields you define), and the card totals them up.
 
 - Boards, lists and cards that look and feel like Trello, in light and dark mode
-- Cards sort by **day of week** (Sun → Sat, then cards with no day). Dragging reorders within a day group and never changes the day.
+- Cards sort by **day of week**, starting with yesterday's day and rolling forward (on a Wednesday: Tue → Wed → … → Mon), then cards with no day. Dragging reorders within a day group and never changes the day.
 - Moving a card into the board's **Done** list clears its day (enforced by the server)
 - Colored banners with free text, per-board labels, due dates, product links, Markdown notes, comments
 - TikTok videos with thumbnails fetched and stored locally, plus per-video custom metric fields with sum/average totals
@@ -83,7 +83,7 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
 
 - **Done list.** Each board has exactly one Done list. The seeded **Done** list starts as it. Change it in **Settings → Lists** or from a list's **⋯** menu. Moving a card into Done clears its day. A list can't be deleted while it's the Done list.
 - **Deleting a list** that still has cards asks which list to move them to.
-- **Sorting a list:** use the list's **⋯** menu, then **Sort cards by**: **Day of week** (the default, with drag to reorder within a day), **A to Z**, or **Due date** (soonest first). A–Z and due-date lists show a small tag in the header and keep themselves in order. You can still drag cards in and out, but not reorder within them.
+- **Sorting a list:** use the list's **⋯** menu, then **Sort cards by**: **Day of week** (the default: starts with yesterday's day, like the Gantt chart, with drag to reorder within a day), **A to Z**, or **Due date** (soonest first). A–Z and due-date lists show a small tag in the header and keep themselves in order. You can still drag cards in and out, but not reorder within them.
 - **Due date outline:** cards with a due date get a bright yellow outline, except in lists named "Needs Recording". Turn it on or off per list with **Outline cards with a due date** in the list's **⋯** menu. Cards whose day of week is today have a gold stripe down their left edge.
 - **List colors:** use a list's **⋯** menu, then **List color**, or the colored dot in **Settings → Lists**. Lists get a soft tint in light mode and a deeper one in dark mode.
 - **Labels** belong to each board. Each one can be any of 40 colors, 15 left-to-right gradients, or a custom color or two-color gradient. Create them in **Settings → Labels** or right from a card's **Labels** popover.
@@ -105,10 +105,11 @@ It opens full screen with no browser bars. On a phone, swipe sideways between li
 - **Comments** go on each video: open a card and use **Add a comment** or **Comments (n)** under a video. Card-wide information belongs in Notes. Comments left on cards before this change show under **Earlier comments**.
 - **Due dates** are dates only: click the due date and pick a day (or Today / Tomorrow / Next week), and it saves straight away. A card turns amber on its due day and red once the day has passed.
 - **Saved banners:** in a card's **Banner** popover, type text and click **Save this text for this color**. After that, picking that color on any card on the board fills the text in, and **Saved banners** at the top of the popover applies a color and its text in one click.
-- **Gantt view:** use **Board | Gantt** in the board bar to see every card with a day of week or a due date on a timeline, grouped by list.
-  - A day of week places the card on that day this week, and a due date marks when it's due. With both, the bar runs from one to the other.
-  - Dashed red means the card is planned for after its due date; a solid red outline means it's overdue.
-  - Use the arrows and **This week** to move around, choose 2, 4 or 8 weeks, and click a bar to open the card. The filter applies here too.
+- **Gantt view:** use **Board | Gantt** in the board bar to see every card with a day of week or a due date on a timeline.
+  - It starts at **yesterday** and shows one week by default (2, 4 or 8 weeks are a click away). The arrows move by a week, and **Today** jumps back.
+  - A day of week places the card on the next matching day in that week, and a due date marks when it's due. With both, the bar runs from one to the other.
+  - Rows are grouped by list in the same order as the board. Dashed red means the card is planned for after its due date; a solid red outline means it's overdue.
+  - Click a bar to open the card. The filter applies here too.
 - **Archive** a card from its detail view. **Archived** (in the board bar) lists archived cards, where you can restore them or delete them permanently.
 - **Search.** **Filter** in the board bar searches titles, notes, banner text, and video comments, and filters by label, day, banner color, due status, and whether a card has videos. The search box in the top bar searches every board and jumps to the card.
 - **Admin export.** Avatar menu, then **Download JSON export**, gives a full dump of everything except passwords.

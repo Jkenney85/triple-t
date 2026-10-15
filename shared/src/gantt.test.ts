@@ -34,6 +34,13 @@ describe('gantt placement', () => {
     expect(span).toMatchObject({ late: true, start: { d: 13 }, end: { d: 17 } });
   });
 
+  it('rolls the plan forward from yesterday', () => {
+    const tuesday = { y: 2026, m: 10, d: 13 }; // yesterday when today is Wed Oct 14
+    expect(ganttSpan({ dayOfWeek: 1, dueAt: null }, tuesday, TZ)!.start).toEqual({ y: 2026, m: 10, d: 19 }); // next Monday
+    expect(ganttSpan({ dayOfWeek: 2, dueAt: null }, tuesday, TZ)!.start).toEqual(tuesday);
+    expect(ganttSpan({ dayOfWeek: 3, dueAt: null }, tuesday, TZ)!.start).toEqual({ y: 2026, m: 10, d: 14 });
+  });
+
   it('skips cards with neither', () => {
     expect(ganttSpan({ dayOfWeek: null, dueAt: null }, week, TZ)).toBeNull();
   });

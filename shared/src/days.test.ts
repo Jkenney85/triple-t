@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appendPosition, computeDropPosition, dayForColumn, dayRank, sortCards, sortCardsBy, weekdayInTz } from './days';
+import { appendPosition, computeDropPosition, dayForColumn, dayRank, sortCards, sortCardsBy, weekdayInTz, yesterdayWeekday } from './days';
 
 const card = (id: number, dayOfWeek: number | null, position: number) => ({ id, dayOfWeek, position });
 
@@ -103,5 +103,34 @@ describe('list sort options', () => {
 
   it('due date puts the soonest first and undated cards last (in day order)', () => {
     expect(sortCardsBy(cards, 'due').map((x) => x.id)).toEqual([3, 5, 1, 2, 4]);
+  });
+});
+
+describe('rolling day order starting yesterday', () => {
+  const cards = [0, 1, 2, 3, 4, 5, 6, null].map((d, i) => ({ id: i + 1, dayOfWeek: d, position: 1 }));
+
+  it('starts with yesterday and keeps no-day cards last', () => {
+    // Today is Wednesday (3), so yesterday is Tuesday (2)
+    const first = yesterdayWeekday(3);
+    expect(first).toBe(2);
+    expect(sortCards(cards, first).map((c) => c.dayOfWeek)).toEqual([2, 3, 4, 5, 6, 0, 1, null]);
+  });
+
+  it('wraps on Sunday (yesterday is Saturday)', () => {
+    expect(sortCards(cards, yesterdayWeekday(0)).map((c) => c.dayOfWeek)).toEqual([6, 0, 1, 2, 3, 4, 5, null]);
+  });
+
+  it('keeps drops inside the day group with the same rolling order', () => {
+    const first = 2; // Tuesday first
+    const others = sortCards([{ id: 1, dayOfWeek: 0, position: 100 }, { id: 2, dayOfWeek: 3, position: 100 }, { id: 3, dayOfWeek: 0, position: 200 }], first);
+    // Sunday cards come after Wednesday in this order
+    expect(others.map((c) => c.id)).toEqual([2, 1, 3]);
+    const pos = computeDropPosition(others, 0, 0, first); // dropped at the top, but it's a Sunday card
+    expect(sortCards([...others, { id: 9, dayOfWeek: 0, position: pos }], first).map((c) => c.id)).toEqual([2, 9, 1, 3]);
+  });
+
+  it('applies to the day-of-week list sort', () => {
+    expect(sortCardsBy(cards.map((c) => ({ ...c, title: 'x', dueAt: null })), 'day', 6).map((c) => c.dayOfWeek)).toEqual([6, 0, 1, 2, 3, 4, 5, null]);
+    expect(dayRank(1, 6)).toBe(2);
   });
 });

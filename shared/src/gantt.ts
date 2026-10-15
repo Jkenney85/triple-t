@@ -20,16 +20,18 @@ export interface GanttSpan {
 }
 
 /**
- * Where a card sits on the Gantt chart. Its day of week is "this week's plan"
- * (Done clears it), so it lands on that weekday in the current week; the due
- * date is absolute. With both, the bar runs from one to the other.
+ * Where a card sits on the Gantt chart. Its day of week is a rolling plan
+ * (Done clears it), so it lands on the next occurrence of that weekday in the
+ * 7 days starting at `planFrom` (yesterday). The due date is absolute; with
+ * both, the bar runs from one to the other.
  */
 export function ganttSpan(
   card: { dayOfWeek: number | null; dueAt: number | null },
-  thisWeekStart: YMD,
+  planFrom: YMD,
   timeZone: string,
 ): GanttSpan | null {
-  const planned = card.dayOfWeek != null ? addDays(thisWeekStart, card.dayOfWeek) : null;
+  const fromWeekday = new Date(Date.UTC(planFrom.y, planFrom.m - 1, planFrom.d)).getUTCDay();
+  const planned = card.dayOfWeek != null ? addDays(planFrom, (card.dayOfWeek - fromWeekday + 7) % 7) : null;
   const due = card.dueAt != null ? ymdInTz(card.dueAt, timeZone) : null;
   if (!planned && !due) return null;
   if (planned && due) {

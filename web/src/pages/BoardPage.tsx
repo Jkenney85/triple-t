@@ -35,6 +35,7 @@ import {
   sortCardsBy,
   videoFieldValues,
   weekdayInTz,
+  yesterdayWeekday,
   type Card,
   type CardFilter,
   type Column,
@@ -85,6 +86,8 @@ export default function BoardPage() {
   const { board, status, error, columns, cards, labels, fields, videos, comments, period } = useBoard();
   const tz = useSession((s) => s.tz);
   const today = useToday(tz);
+  /** Day-of-week lists roll with the calendar: yesterday's weekday sorts first, matching the Gantt chart. */
+  const firstDay = yesterdayWeekday(today);
 
   const [filter, setFilter] = useState<CardFilter>(EMPTY_FILTER);
   const [panel, setPanel] = useState<'settings' | 'archived' | null>(null);
@@ -162,9 +165,9 @@ export default function BoardPage() {
       }
     }
     // Each list orders its cards by its own sort setting.
-    for (const col of sortedColumns) visible[col.id] = sortCardsBy(byColumn[col.id] ?? [], col.sort).map((c) => c.id);
+    for (const col of sortedColumns) visible[col.id] = sortCardsBy(byColumn[col.id] ?? [], col.sort, firstDay).map((c) => c.id);
     return { visibleByColumn: visible, totalByColumn: total };
-  }, [cards, sortedColumns, filter, commentsByCard, videosByCard]);
+  }, [cards, sortedColumns, filter, commentsByCard, videosByCard, firstDay]);
 
   // ---- Drag and drop ----
 
@@ -289,7 +292,7 @@ export default function BoardPage() {
       // Dragging never changes the day: the drop snaps into the card's own day group.
       const index = list.indexOf(cardId);
       const others = list.filter((id) => id !== cardId).map((id) => cards[id]);
-      position = computeDropPosition(others, index, day);
+      position = computeDropPosition(others, index, day, firstDay);
     } else {
       // A to Z and due-date lists order themselves, so reordering within one does nothing.
       if (colId === card.columnId) return;

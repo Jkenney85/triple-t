@@ -328,7 +328,7 @@ function CardComposer({ column, onClose, onAdded }: { column: Column; onClose: (
 }
 
 const SORT_HELP: Record<ColumnSort, string> = {
-  day: 'Sunday to Saturday, then cards with no day. Drag to reorder within a day.',
+  day: 'Starting with yesterday, like the Gantt chart, then cards with no day. Drag to reorder within a day.',
   title: 'Alphabetical by title. Order is automatic.',
   due: 'Soonest due date first; cards without one at the bottom. Order is automatic.',
 };

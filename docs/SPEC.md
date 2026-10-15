@@ -13,7 +13,8 @@ The owner made these decisions after the spec was written. They take precedence 
 5. **Nightly backups: deferred** ("we'll add that later"). The admin JSON export is implemented; the README documents manual backup and restore.
 6. **Comments are per video (2026-10-11):** the card-level Comments section was removed as redundant with Notes. Each video in a card has its own comment thread. Card comments from before the change still show read-only as "Earlier comments" (authors can edit or delete them). The comment badge on the card front counts all of them.
 7. **Metrics are recorded per month (2026-10-11):** TikTok doesn't give all-time numbers, so each video's metric values are entered per calendar month. Cards and the board show all-time totals or a single month (the "Metrics" selector in the board bar). Values entered before this change were filed under the month they were last saved.
-8. **docker-compose.yml:** exactly the owner's Traefik setup, as shown below.
+8. **Day order rolls from yesterday (2026-10-14):** day-of-week lists no longer start on Sunday. Yesterday's weekday sorts first, then onward, with no-day cards last, so the board matches the Gantt chart. The Gantt chart starts at yesterday, defaults to a 1-week view, and places a day of week on its next occurrence in that window.
+9. **docker-compose.yml:** exactly the owner's Traefik setup, as shown below.
 
 Implementation choices made where the spec was silent:
 

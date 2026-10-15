@@ -48,7 +48,9 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
 
 ## Core rules (don't break these; tests cover most of them)
 
-- **Card order** is computed, never stored as a list: sort by `dayRank` (Sun=0 … Sat=6, then no day = 7), then `position`, then `id`. `computeDropPosition` clamps a drop into the card's own day group. **Dragging never changes a card's day.**
+- **Card order** is computed, never stored as a list: sort by `dayRank(day, firstDay)`, then `position`, then `id`. Days roll with the calendar: `firstDay = yesterdayWeekday(today in TZ)`, so yesterday's weekday sorts first (matching the Gantt chart), and cards with no day sort last.
+  - The shared helpers (`sortCards`, `sortCardsBy`, `computeDropPosition`, `appendPosition`) take `firstDay` and default to Sunday (0). Within-group positions don't depend on it, so the server's Sunday-based `appendPosition` is fine. But `computeDropPosition` must use the same `firstDay` its list was sorted with: `BoardPage` passes it.
+  - `computeDropPosition` clamps a drop into the card's own day group. **Dragging never changes a card's day.**
 - **List sort options:** `columns.sort` is `day` (default: the order above), `title` (A to Z, natural and case-insensitive) or `due` (soonest first, undated last). `sortCardsBy()` in `shared/days.ts` applies it per list in `BoardPage`.
   - In `title` and `due` lists the order is automatic: reordering within the list is a no-op on drop.
   - A card dropped into one of those lists gets `appendPosition` within its day group, so the list still has a sensible manual order if it goes back to `day`.
@@ -72,7 +74,8 @@ web/src/     stores/board.ts (normalized board state, applyPatch, optimistic mut
   - `CardFront` sets `boxShadow` inline, so add any new shadow to that list rather than using Tailwind `shadow-*` or `ring-*` classes.
 - **Saved banners:** the `banner_presets` table holds (board, color) → text, unique per board and color. They're in `BoardState.bannerPresets` and patch kind `bannerPresets`, set with `PUT /api/boards/:id/banner-presets` (an upsert) and removed with `DELETE /api/banner-presets/:id`. In `BannerPopover`, picking a color that has a preset also sets the banner text.
 - **Gantt view** (`?view=gantt`, `GanttView.tsx`): shows the same filtered cards as the board, grouped by list in board order.
-  - `ganttSpan()` in `shared/gantt.ts` places each card. The day of week means "this week's plan" (Done clears it), so it goes on that weekday of the current Sunday-start week in `TZ`; the due date is absolute; with both, the bar runs between them and is flagged `late` if the plan is after the due date.
+  - `ganttSpan(card, planFrom = yesterday)` in `shared/gantt.ts` places each card. A day of week is a rolling plan, placed on its next occurrence in the 7 days starting yesterday; the due date is absolute; with both, the bar runs between them and is flagged `late` if the plan is after the due date.
+  - The chart starts at yesterday and defaults to 1 week, with days stretched to fill the width (zoom `day: 0`). Rows keep each list's board order.
   - Cards with neither don't appear and are counted below the chart. Clicking a bar opens the card modal over the chart.
 - **List colors:** `columns.color` holds `#rrggbb` or null. The list background is `color-mix(in srgb, <color> var(--list-tint), var(--list))`, which gives a pastel in light mode and a deep shade in dark mode (`--list-tint` is set per theme in `index.css`).
 - **App updates (`web/src/lib/updates.ts`):**
