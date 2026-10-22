@@ -162,6 +162,10 @@ export const videos = sqliteTable(
     cardId: integer('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
+    /** "tiktok": a linked video. "manual": sales entered by hand with no video link (url is empty). */
+    kind: text('kind', { enum: ['tiktok', 'manual'] })
+      .notNull()
+      .default('tiktok'),
     url: text('url').notNull(),
     title: text('title').notNull().default(''),
     author: text('author').notNull().default(''),

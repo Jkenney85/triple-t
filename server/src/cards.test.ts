@@ -201,6 +201,35 @@ describe('due date outline', () => {
   });
 });
 
+describe('manual sales entries', () => {
+  it('records sales without a video link and counts them like a video', async () => {
+    const { body } = await call('POST', `/api/boards/${board.board.id}/cards`, { columnId: todo().id, title: 'Manual sales' });
+    const cardId = body.cards![0].id;
+    const res = await call('POST', `/api/cards/${cardId}/videos`, { kind: 'manual' });
+    expect(res.status).toBe(200);
+    const entry = res.body.videos![0];
+    expect(entry).toMatchObject({ kind: 'manual', url: '', title: 'Other sales', status: 'ok', thumbnail: null });
+
+    const sales = board.fields.find((f) => f.name === 'Sales')!.id;
+    const saved = await call('PATCH', `/api/videos/${entry.id}`, { month: '2026-10', values: { [sales]: '42' } });
+    expect(saved.body.videos![0].months).toEqual({ '2026-10': { [sales]: '42' } });
+
+    const renamed = await call('PATCH', `/api/videos/${entry.id}/name`, { title: 'Affiliate creators' });
+    expect(renamed.body.videos![0].title).toBe('Affiliate creators');
+    expect((await call('PATCH', `/api/videos/${entry.id}/name`, { title: ' ' })).status).toBe(400);
+    expect((await call('POST', `/api/videos/${entry.id}/refresh`, {})).status).toBe(400);
+  });
+
+  it('only renames manual entries, and still requires a TikTok link for real videos', async () => {
+    const { body } = await call('POST', `/api/boards/${board.board.id}/cards`, { columnId: todo().id, title: 'Linked' });
+    const cardId = body.cards![0].id;
+    expect((await call('POST', `/api/cards/${cardId}/videos`, { url: 'https://example.com/x' })).status).toBe(400);
+    const v = (await call('POST', `/api/cards/${cardId}/videos`, { url: 'https://www.tiktok.com/@nobody/video/3' })).body.videos![0];
+    expect(v.kind).toBe('tiktok');
+    expect((await call('PATCH', `/api/videos/${v.id}/name`, { title: 'Nope' })).status).toBe(400);
+  });
+});
+
 describe('saved banners', () => {
   it('remembers one text per color per board, and forgets on request', async () => {
     const boardId = board.board.id;

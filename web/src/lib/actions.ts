@@ -163,6 +163,13 @@ export function setVideoValue(boardId: number, video: Video, month: string, fiel
   );
 }
 
+/** Adds an entry for sales from videos that aren't linked on the card. */
+export const addManualSales = (card: Card, title = 'Other sales') =>
+  board().mutate(null, () => post<Patch>(`/api/cards/${card.id}/videos`, { kind: 'manual', title }));
+
+export const renameManualSales = (boardId: number, video: Video, title: string) =>
+  board().mutate({ boardId, videos: [{ ...video, title }] }, () => patch<Patch>(`/api/videos/${video.id}/name`, { title }));
+
 export const refreshVideo = (boardId: number, video: Video) =>
   board().mutate({ boardId, videos: [{ ...video, status: 'pending', error: null }] }, () =>
     post<Patch>(`/api/videos/${video.id}/refresh`),

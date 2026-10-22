@@ -98,6 +98,7 @@ export function toVideo(r: VideoRow, months: Record<string, Record<string, strin
   return {
     id: r.id,
     cardId: r.cardId,
+    kind: r.kind,
     url: r.url,
     title: r.title,
     author: r.author,

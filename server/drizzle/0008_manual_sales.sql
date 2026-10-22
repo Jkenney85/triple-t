@@ -1,0 +1,1 @@
+ALTER TABLE `videos` ADD `kind` text DEFAULT 'tiktok' NOT NULL;

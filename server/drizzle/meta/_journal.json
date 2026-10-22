@@ -57,6 +57,13 @@
       "when": 1792033039123,
       "tag": "0007_banner_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792708409743,
+      "tag": "0008_manual_sales",
+      "breakpoints": true
     }
   ]
 }

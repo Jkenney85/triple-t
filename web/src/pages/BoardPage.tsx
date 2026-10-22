@@ -139,7 +139,7 @@ export default function BoardPage() {
         frontFields,
         values,
         commentCount: commentsByCard[card.id]?.length ?? 0,
-        videoCount: vids.length,
+        videoCount: vids.filter((v) => v.kind === 'tiktok').length,
         isToday: card.dayOfWeek === today && !inDone,
         inDone,
         outlineDue: card.dueAt != null && !!columns[card.columnId]?.highlightDue,
@@ -160,7 +160,9 @@ export default function BoardPage() {
     for (const card of Object.values(cards)) {
       if (!(card.columnId in visible)) continue;
       total[card.columnId]++;
-      if (cardMatchesFilter(card, filter, { comments: commentsByCard[card.id] ?? [], videos: videosByCard[card.id] ?? [], now })) {
+      // "Has videos" means linked TikTok videos; manual sales entries don't count.
+      const linked = (videosByCard[card.id] ?? []).filter((v) => v.kind === 'tiktok');
+      if (cardMatchesFilter(card, filter, { comments: commentsByCard[card.id] ?? [], videos: linked, now })) {
         (byColumn[card.columnId] ??= []).push(card);
       }
     }

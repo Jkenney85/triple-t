@@ -319,8 +319,15 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
   app.post('/api/cards/:id/videos', async (req) => {
     const cardId = idParam(req);
     const card = getCardRow(db, cardId);
-    const { url } = parseBody(z.object({ url: z.string().trim().max(LIMITS.url) }), req.body);
-    if (!isTikTokUrl(url)) throw badRequest('Enter a TikTok video link (tiktok.com or vm.tiktok.com)');
+    const body = parseBody(
+      z.union([
+        z.object({ url: z.string().trim().max(LIMITS.url) }),
+        z.object({ kind: z.literal('manual'), title: z.string().trim().max(200).optional() }),
+      ]),
+      req.body,
+    );
+    const manual = 'kind' in body;
+    if (!manual && !isTikTokUrl(body.url)) throw badRequest('Enter a TikTok video link (tiktok.com or vm.tiktok.com)');
     const max = db
       .select({ max: sql<number | null>`max(${s.videos.position})` })
       .from(s.videos)
@@ -328,12 +335,17 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
       .get()?.max;
     const video = db
       .insert(s.videos)
-      .values({ cardId, url, position: (max ?? 0) + POSITION_GAP, createdBy: req.user!.id })
+      .values(
+        manual
+          ? // Sales from videos that aren't linked: no URL, nothing to fetch.
+            { cardId, kind: 'manual', url: '', title: body.title || 'Other sales', status: 'ok', position: (max ?? 0) + POSITION_GAP, createdBy: req.user!.id }
+          : { cardId, url: body.url, position: (max ?? 0) + POSITION_GAP, createdBy: req.user!.id },
+      )
       .returning()
       .get();
     db.update(s.cards).set({ updatedAt: Date.now(), updatedBy: req.user!.id }).where(eq(s.cards.id, cardId)).run();
     const patch = commit(ctx, req, { boardId: card.boardId, videos: [loadVideo(db, video.id)], cards: [loadCard(db, cardId)] });
-    refreshVideo(video.id, card.boardId);
+    if (!manual) refreshVideo(video.id, card.boardId);
     return patch;
   });
 
@@ -383,9 +395,20 @@ export async function cardRoutes(app: FastifyInstance, ctx: Ctx) {
     return commit(ctx, req, { boardId: card.boardId, videos: [loadVideo(db, id)], cards: [loadCard(db, card.id)] });
   });
 
+  /** Renames a manual sales entry. Linked videos keep the title TikTok gives them. */
+  app.patch('/api/videos/:id/name', async (req) => {
+    const id = idParam(req);
+    const { video, card } = videoWithCard(id);
+    if (video.kind !== 'manual') throw badRequest('Only manual sales entries can be renamed');
+    const { title } = parseBody(z.object({ title: z.string().trim().min(1, 'Give it a name').max(200) }), req.body);
+    db.update(s.videos).set({ title, updatedAt: Date.now() }).where(eq(s.videos.id, id)).run();
+    return commit(ctx, req, { boardId: card.boardId, videos: [loadVideo(db, id)] });
+  });
+
   app.post('/api/videos/:id/refresh', async (req) => {
     const id = idParam(req);
-    const { card } = videoWithCard(id);
+    const { video: existing, card } = videoWithCard(id);
+    if (existing.kind === 'manual') throw badRequest('Manual sales entries have no video to refresh');
     db.update(s.videos).set({ status: 'pending', error: null }).where(eq(s.videos.id, id)).run();
     const patch = commit(ctx, req, { boardId: card.boardId, videos: [loadVideo(db, id)] });
     refreshVideo(id, card.boardId);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Loader2, Play, RefreshCw, Sigma, Trash2, Video as VideoIcon } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Loader2, Play, Receipt, RefreshCw, Sigma, Trash2, Video as VideoIcon } from 'lucide-react';
 import {
   computeTotal,
   formatMonth,
@@ -16,7 +16,7 @@ import {
   type Field,
   type Video,
 } from '@triple-t/shared';
-import { addVideo, deleteVideo, refreshVideo, setVideoValue } from '../../lib/actions';
+import { addManualSales, addVideo, deleteVideo, refreshVideo, renameManualSales, setVideoValue } from '../../lib/actions';
 import { useDraft } from '../../lib/useDraft';
 import { useBoard } from '../../stores/board';
 import { useSession } from '../../stores/session';
@@ -40,6 +40,8 @@ export default function VideosSection({
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const valid = isTikTokUrl(url.trim());
+  const linkedCount = videos.filter((v) => v.kind === 'tiktok').length;
+  const hasManual = videos.length > linkedCount;
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -60,11 +62,11 @@ export default function VideosSection({
       <div className="mb-2 flex items-center gap-2">
         <VideoIcon size={18} className="text-ink-subtle" />
         <h3 className="flex-1 text-base font-semibold">
-          Videos {videos.length > 0 && <span className="font-normal text-ink-subtle">({videos.length})</span>}
+          Videos {linkedCount > 0 && <span className="font-normal text-ink-subtle">({linkedCount})</span>}
         </h3>
       </div>
 
-      {videos.length > 0 && <Totals videos={videos} fields={fields} />}
+      {videos.length > 0 && <Totals videos={videos} fields={fields} label={hasManual ? 'Totals across videos and other sales for' : 'Totals across videos for'} />}
 
       <div className="flex flex-col gap-3">
         {videos.map((v) => (
@@ -88,11 +90,18 @@ export default function VideosSection({
         </Button>
       </form>
       {url.trim() && !valid && <p className="mt-1 text-xs text-danger">That doesn’t look like a TikTok link.</p>}
+      <button
+        type="button"
+        onClick={() => void addManualSales(card).catch(() => {})}
+        className="mt-2 flex items-center gap-1.5 rounded px-1 py-1 text-xs font-semibold text-ink-subtle hover:text-ink"
+      >
+        <Receipt size={14} /> Add sales without a video
+      </button>
     </section>
   );
 }
 
-function Totals({ videos, fields }: { videos: Video[]; fields: Field[] }) {
+function Totals({ videos, fields, label }: { videos: Video[]; fields: Field[]; label: string }) {
   const period = useBoard((s) => s.period);
   const totals = useMemo(
     () =>
@@ -105,7 +114,7 @@ function Totals({ videos, fields }: { videos: Video[]; fields: Field[] }) {
   return (
     <div className="mb-3">
       <div className="mb-1.5 flex items-center gap-2 text-xs text-ink-subtle">
-        <span className="font-semibold">Totals across videos for</span>
+        <span className="font-semibold">{label}</span>
         <PeriodPicker variant="inline" />
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -126,6 +135,34 @@ function VideoRow({ video, fields, boardId, comments }: { video: Video; fields: 
   const [imgFailed, setImgFailed] = useState(false);
   const live = useBoard((s) => s.videos[video.id]) ?? video;
   const showThumb = live.thumbnail && !imgFailed;
+
+  if (live.kind === 'manual') {
+    return (
+      <div className="rounded-lg border border-dashed border-line bg-card p-2.5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sunken text-ink-subtle">
+            <Receipt size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <ManualSalesName video={live} boardId={boardId} />
+            <p className="px-1.5 text-xs text-ink-subtle">Sales not tied to a linked video; counted in the card’s totals.</p>
+          </div>
+          <IconButton
+            label="Remove this sales entry"
+            onClick={async () => {
+              if (await confirmDialog({ title: `Remove “${live.title}”?`, message: 'Its monthly numbers are removed too.', confirmLabel: 'Remove', danger: true })) {
+                void deleteVideo(boardId, live).catch(() => {});
+              }
+            }}
+          >
+            <Trash2 size={14} />
+          </IconButton>
+        </div>
+        {fields.length > 0 && <VideoMetrics video={live} fields={fields} boardId={boardId} />}
+        <VideoComments video={live} comments={comments} boardId={boardId} />
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-line bg-card p-2.5">
@@ -187,6 +224,28 @@ function VideoRow({ video, fields, boardId, comments }: { video: Video; fields: 
       {fields.length > 0 && <VideoMetrics video={live} fields={fields} boardId={boardId} />}
       <VideoComments video={live} comments={comments} boardId={boardId} />
     </div>
+  );
+}
+
+function ManualSalesName({ video, boardId }: { video: Video; boardId: number }) {
+  const { draft, setDraft, setEditing } = useDraft(video.title);
+  function save() {
+    setEditing(false);
+    const t = draft.trim();
+    if (!t) return setDraft(video.title);
+    if (t !== video.title) void renameManualSales(boardId, video, t).catch(() => {});
+  }
+  return (
+    <input
+      aria-label="Name of this sales entry"
+      value={draft}
+      maxLength={200}
+      onFocus={() => setEditing(true)}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      className="w-full rounded border-2 border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold text-ink outline-none hover:bg-hover focus:border-accent focus:bg-card"
+    />
   );
 }
 

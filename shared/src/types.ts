@@ -88,6 +88,8 @@ export interface Comment {
 export interface Video {
   id: number;
   cardId: number;
+  /** "tiktok" is a linked video; "manual" is sales entered by hand without one (url is empty). */
+  kind: 'tiktok' | 'manual';
   url: string;
   title: string;
   author: string;
